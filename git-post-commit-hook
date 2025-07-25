@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Post-commit hook to trigger Jenkins build
+# This hook triggers Jenkins whenever you make a local git commit
+
+echo "🚀 Triggering Jenkins build after commit..."
+
+# Jenkins webhook URL with token
+JENKINS_WEBHOOK_URL="http://localhost:9090/generic-webhook-trigger/invoke?token=shopsphere-webhook-token"
+
+# Get the latest commit info
+COMMIT_HASH=$(git rev-parse HEAD)
+COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+AUTHOR=$(git log -1 --pretty=%an)
+
+echo "📝 Commit: ${COMMIT_HASH:0:7}"
+echo "👤 Author: $AUTHOR"
+echo "💬 Message: $COMMIT_MESSAGE"
+
+# Trigger Jenkins build
+echo "🔄 Triggering Jenkins..."
+if curl -s -X POST "$JENKINS_WEBHOOK_URL" > /dev/null; then
+    echo "✅ Jenkins build triggered successfully!"
+    echo "🌐 Check Jenkins dashboard: http://localhost:9090"
+else
+    echo "❌ Failed to trigger Jenkins build"
+    echo "🔍 Check if Jenkins is running on http://localhost:9090"
+fi
+
+echo ""

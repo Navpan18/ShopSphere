@@ -1,0 +1,7 @@
+# Essential Jenkins plugins for CI/CD
+git:latest
+workflow-aggregator:latest
+docker-workflow:latest
+github:latest
+nodejs:latest
+python:latest

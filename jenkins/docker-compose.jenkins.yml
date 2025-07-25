@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: shopsphere_jenkins
+    ports:
+      - "9090:8080" # Jenkins on port 9090 to avoid conflict with Kafka
+      - "50000:50000" # Jenkins agent port
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock # Docker-in-Docker
+      - ./workspace:/workspace # Shared workspace
+      - ../:/app # Mount project root
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    networks:
+      - jenkins-network
+      - shopsphere-network # Connect to main app network
+    restart: unless-stopped
+    user: root # Needed for Docker access
+    depends_on:
+      - jenkins-db
+
+  jenkins-db:
+    image: postgres:14-alpine
+    container_name: jenkins_postgres
+    environment:
+      POSTGRES_USER: jenkins
+      POSTGRES_PASSWORD: jenkins123
+      POSTGRES_DB: jenkinsdb
+    ports:
+      - "5433:5432" # Different port to avoid conflict
+    volumes:
+      - jenkins_db_data:/var/lib/postgresql/data
+    networks:
+      - jenkins-network
+
+volumes:
+  jenkins_home:
+  jenkins_db_data:
+
+networks:
+  jenkins-network:
+    driver: bridge
+  shopsphere-network:
+    external: true # Connect to existing network

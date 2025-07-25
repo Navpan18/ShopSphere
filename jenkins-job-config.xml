@@ -1,0 +1,118 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <actions/>
+  <description>ShopSphere CI/CD Pipeline - Automated build, test, and deployment</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.jira.JiraProjectProperty plugin="jira"/>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github">
+      <projectUrl>https://github.com/Navpan18/ShopSphere.git/</projectUrl>
+      <displayName></displayName>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <!-- SCM Polling disabled - using webhooks only -->
+        <com.cloudbees.jenkins.GitHubPushTrigger plugin="github">
+          <spec></spec>
+        </com.cloudbees.jenkins.GitHubPushTrigger>
+        <!-- Generic webhook trigger for local development -->
+        <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger">
+          <spec></spec>
+          <token>shopsphere-webhook-token</token>
+          <causeString>Triggered by ShopSphere webhook</causeString>
+          <silentResponse>false</silentResponse>
+          <shouldNotFlatten>false</shouldNotFlatten>
+          <regexpFilterText></regexpFilterText>
+          <regexpFilterExpression></regexpFilterExpression>
+        </org.jenkinsci.plugins.gwt.GenericTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
+      <abortPrevious>false</abortPrevious>
+    </org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>@Library('shared-library') _
+pipeline {
+    agent any
+    
+    environment {
+        // Docker registry (can be Docker Hub or private registry)
+        DOCKER_REGISTRY = "localhost:5000"
+        DOCKER_IMAGE_BACKEND = "${DOCKER_REGISTRY}/shopsphere-backend"
+        DOCKER_IMAGE_FRONTEND = "${DOCKER_REGISTRY}/shopsphere-frontend"
+        
+        // Application configurations
+        APP_NAME = "shopsphere"
+        BUILD_NUMBER = "${env.BUILD_NUMBER}"
+        GIT_COMMIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
+        
+        // Test configurations
+        PYTEST_ARGS = "--verbose --tb=short"
+        NODE_ENV = "test"
+        
+        // Deployment configurations
+        COMPOSE_PROJECT_NAME = "shopsphere-ci"
+        DEPLOY_ENV = "staging"
+    }
+    
+    stages {
+        stage('🚀 Setup') {
+            steps {
+                script {
+                    echo "=== Starting ShopSphere CI/CD Pipeline ==="
+                    echo "Build: ${BUILD_NUMBER}"
+                    echo "Workspace: ${WORKSPACE}"
+                }
+            }
+        }
+        
+        stage('🔍 Environment Check') {
+            steps {
+                sh '''
+                    echo "=== Environment Check ==="
+                    echo "Current directory: $(pwd)"
+                    echo "Docker version:"
+                    docker --version || echo "Docker not available"
+                    echo "Docker Compose version:"
+                    docker-compose --version || echo "Docker Compose not available"
+                    echo "Python version:"
+                    python3 --version || echo "Python not available"
+                    echo "Node version:"
+                    node --version || echo "Node not available"
+                    echo "NPM version:"
+                    npm --version || echo "NPM not available"
+                '''
+            }
+        }
+        
+        stage('📁 Workspace Verification') {
+            steps {
+                sh '''
+                    echo "=== Workspace Verification ==="
+                    pwd
+                    ls -la
+                    echo "Checking for project structure..."
+                    [ -d "backend" ] && echo "✅ Backend directory found" || echo "❌ Backend directory missing"
+                    [ -d "frontend" ] && echo "✅ Frontend directory found" || echo "❌ Frontend directory missing"
+                    [ -f "docker-compose.yml" ] && echo "✅ Docker Compose file found" || echo "❌ Docker Compose file missing"
+                    [ -f "Jenkinsfile" ] && echo "✅ Jenkinsfile found" || echo "❌ Jenkinsfile missing"
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo "=== Pipeline completed ==="
+                echo "Build result: ${currentBuild.result ?: 'SUCCESS'}"
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

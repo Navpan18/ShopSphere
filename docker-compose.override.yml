@@ -1,0 +1,92 @@
+# Docker Compose override for CI/CD environments
+# This file extends the main docker-compose.yml for Jenkins CI/CD
+
+version: "3.8"
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-shopsphere-backend:latest}
+    container_name: ${COMPOSE_PROJECT_NAME:-shopsphere}_backend_${BUILD_NUMBER:-latest}
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/${POSTGRES_DB:-shopdb}
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_...}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-false}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.shopsphere.service=backend"
+      - "com.shopsphere.environment=${ENVIRONMENT:-development}"
+      - "com.shopsphere.build=${BUILD_NUMBER:-latest}"
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-shopsphere-frontend:latest}
+    container_name: ${COMPOSE_PROJECT_NAME:-shopsphere}_frontend_${BUILD_NUMBER:-latest}
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-8000}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-pk_test_...}
+      - NODE_ENV=${NODE_ENV:-production}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.shopsphere.service=frontend"
+      - "com.shopsphere.environment=${ENVIRONMENT:-development}"
+      - "com.shopsphere.build=${BUILD_NUMBER:-latest}"
+
+  # Test database for CI/CD
+  test-postgres:
+    image: postgres:14-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-shopsphere}_test_postgres
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - test_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - testing
+
+  # Test Redis for CI/CD
+  test-redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-shopsphere}_test_redis
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    profiles:
+      - testing
+
+volumes:
+  test_pgdata:
+
+networks:
+  default:
+    name: ${COMPOSE_PROJECT_NAME:-shopsphere}-network
