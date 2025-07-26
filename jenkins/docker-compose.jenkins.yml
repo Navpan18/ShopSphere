@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.jenkins
     container_name: shopsphere_jenkins
     ports:
-      - "9090:8080" # Jenkins on port 9090 to avoid conflict with Kafka
+      - "9040:8080" # Jenkins on port 9040 to avoid conflict with Kafka and Prometheus
       - "50000:50000" # Jenkins agent port
     volumes:
       - jenkins_home:/var/jenkins_home

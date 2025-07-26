@@ -11,8 +11,8 @@ echo "================================="
 
 # Test Jenkins
 echo "1. Testing Jenkins..."
-if curl -s -o /dev/null http://localhost:9090; then
-    echo "   ✅ Jenkins is accessible on localhost:9090"
+if curl -s -o /dev/null http://localhost:9040; then
+    echo "   ✅ Jenkins is accessible on localhost:9040"
 else
     echo "   ❌ Jenkins is not accessible"
     exit 1
@@ -37,9 +37,9 @@ fi
 
 # Test comprehensive pipeline job
 echo "3. Testing comprehensive pipeline job..."
-if curl -s "http://localhost:9090/job/ShopSphere-Comprehensive/api/json" | grep -q "name"; then
+if curl -s "http://localhost:9040/job/ShopSphere-Comprehensive/api/json" | grep -q "name"; then
     echo "   ✅ Comprehensive pipeline job exists"
-    echo "   🔗 Job URL: http://localhost:9090/job/ShopSphere-Comprehensive"
+    echo "   🔗 Job URL: http://localhost:9040/job/ShopSphere-Comprehensive"
     if [ -n "$PUBLIC_URL" ]; then
         echo "   🌐 Public Job URL: $PUBLIC_URL/job/ShopSphere-Comprehensive"
     fi
@@ -83,7 +83,7 @@ fi
 
 echo ""
 echo "🎯 Environment Test Summary:"
-echo "   🏗️ Jenkins: ✅ Running on localhost:9090"
+echo "   🏗️ Jenkins: ✅ Running on localhost:9040"
 if [ -n "$PUBLIC_URL" ]; then
     echo "   🌐 Public: ✅ $PUBLIC_URL"
 else
@@ -95,7 +95,7 @@ echo "   📁 Scripts: ✅ All testing scripts available"
 
 echo ""
 echo "🚀 Ready to test! Next steps:"
-echo "   1. Open: http://localhost:9090/job/ShopSphere-Comprehensive"
+echo "   1. Open: http://localhost:9040/job/ShopSphere-Comprehensive"
 echo "   2. Click 'Build with Parameters'"
 echo "   3. Configure test options:"
 echo "      - RUN_E2E_TESTS: true (for full testing)"

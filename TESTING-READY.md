@@ -7,12 +7,12 @@ Generated: $(date)
 ## 🔗 Access URLs
 
 ### Jenkins
-- **Local Jenkins**: http://localhost:9090
+- **Local Jenkins**: http://localhost:9040
 - **Public Jenkins**: https://5ff7fc19f939.ngrok-free.app
 - **ngrok Dashboard**: http://localhost:4040
 
 ### Comprehensive Testing Pipeline
-- **Local Pipeline**: http://localhost:9090/job/ShopSphere-Comprehensive
+- **Local Pipeline**: http://localhost:9040/job/ShopSphere-Comprehensive
 - **Public Pipeline**: https://5ff7fc19f939.ngrok-free.app/job/ShopSphere-Comprehensive
 
 ### GitHub Integration
@@ -39,7 +39,7 @@ Generated: $(date)
 
 ## 🎯 Running the Comprehensive Pipeline
 
-1. **Open Jenkins**: http://localhost:9090/job/ShopSphere-Comprehensive
+1. **Open Jenkins**: http://localhost:9040/job/ShopSphere-Comprehensive
 2. **Click**: "Build with Parameters"
 3. **Configure**:
    - `RUN_E2E_TESTS`: ✅ true (for complete testing)
@@ -143,7 +143,7 @@ Your comprehensive testing pipeline is fully configured and ready to validate yo
 5. 🚢 Deploy to staging automatically
 6. 🎯 Provide production deployment with approval
 
-**Start testing now**: http://localhost:9090/job/ShopSphere-Comprehensive
+**Start testing now**: http://localhost:9040/job/ShopSphere-Comprehensive
 
 ---
 *Environment managed by ShopSphere DevOps Pipeline*

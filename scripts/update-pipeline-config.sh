@@ -8,7 +8,7 @@ set -e
 echo "🔄 Updating ShopSphere Jenkins Pipeline Configuration..."
 
 # Configuration
-JENKINS_URL="http://localhost:9090"
+JENKINS_URL="http://localhost:9040"
 JOB_NAME="ShopSphere-Comprehensive-Pipeline"
 CONFIG_FILE="jenkins-comprehensive-job-config.xml"
 

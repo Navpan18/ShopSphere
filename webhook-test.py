@@ -54,7 +54,7 @@ def trigger_jenkins_pipeline():
     try:
         result = subprocess.run([
             "curl", "-X", "POST", "-u", "admin:admin",
-            "http://localhost:9090/job/ShopSphere-Simple/build"
+            "http://localhost:9040/job/ShopSphere-Simple/build"
         ], capture_output=True, text=True, timeout=10)
         
         if result.returncode == 0:
@@ -77,7 +77,7 @@ def check_pipeline_status():
     try:
         result = subprocess.run([
             "curl", "-s", "-u", "admin:admin",
-            "http://localhost:9090/job/ShopSphere-Simple/lastBuild/api/json"
+            "http://localhost:9040/job/ShopSphere-Simple/lastBuild/api/json"
         ], capture_output=True, text=True, timeout=10)
         
         if result.returncode == 0 and result.stdout:
@@ -150,7 +150,7 @@ def main():
             time.sleep(3)
     
     print("\n✅ Webhook-to-Pipeline test completed!")
-    print("🔗 Jenkins UI: http://localhost:9090")
+    print("🔗 Jenkins UI: http://localhost:9040")
     print("🌐 Public URL (ngrok): https://818961da248f.ngrok-free.app")
 
 if __name__ == "__main__":

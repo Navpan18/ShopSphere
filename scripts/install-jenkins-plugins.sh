@@ -5,7 +5,7 @@ set -e
 
 echo "🔧 Installing required Jenkins plugins for Git/GitHub integration..."
 
-JENKINS_URL="http://localhost:9090"
+JENKINS_URL="http://localhost:9040"
 JENKINS_CLI="java -jar jenkins-cli.jar -s $JENKINS_URL"
 
 # Download Jenkins CLI if not present

@@ -22,8 +22,8 @@ echo "🎯 Setting up ShopSphere Comprehensive Testing Pipeline"
 echo "====================================================="
 
 # Check if Jenkins is running
-if ! curl -s -o /dev/null http://localhost:9090; then
-    log_error "Jenkins is not accessible at http://localhost:9090"
+if ! curl -s -o /dev/null http://localhost:9040; then
+    log_error "Jenkins is not accessible at http://localhost:9040"
     log_info "Please run: ./scripts/restart-jenkins.sh"
     exit 1
 fi
@@ -33,25 +33,25 @@ log_success "Jenkins is accessible"
 # Get Jenkins CLI jar if not exists
 if [ ! -f "jenkins-cli.jar" ]; then
     log_info "Downloading Jenkins CLI..."
-    wget -q http://localhost:9090/jnlpJars/jenkins-cli.jar
+    wget -q http://localhost:9040/jnlpJars/jenkins-cli.jar
 fi
 
 # Check if comprehensive pipeline job exists
 JOB_NAME="ShopSphere-Comprehensive"
-if curl -s "http://localhost:9090/job/$JOB_NAME/api/json" | grep -q "name"; then
+if curl -s "http://localhost:9040/job/$JOB_NAME/api/json" | grep -q "name"; then
     log_warning "Job '$JOB_NAME' already exists"
     read -p "Do you want to update it? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         log_info "Updating existing job..."
-        java -jar jenkins-cli.jar -s http://localhost:9090 update-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml
+        java -jar jenkins-cli.jar -s http://localhost:9040 update-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml
     else
         log_info "Skipping job creation"
         exit 0
     fi
 else
     log_info "Creating comprehensive pipeline job..."
-    java -jar jenkins-cli.jar -s http://localhost:9090 create-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml
+    java -jar jenkins-cli.jar -s http://localhost:9040 create-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml
 fi
 
 log_success "Comprehensive pipeline job configured!"
@@ -61,7 +61,7 @@ echo "🚀 Pipeline Setup Complete!"
 echo ""
 echo "📋 Job Details:"
 echo "  📛 Job Name: $JOB_NAME"
-echo "  🌐 Job URL: http://localhost:9090/job/$JOB_NAME"
+echo "  🌐 Job URL: http://localhost:9040/job/$JOB_NAME"
 echo "  📄 Pipeline File: Jenkinsfile.comprehensive"
 echo ""
 echo "⚙️ Pipeline Features:"
@@ -74,8 +74,8 @@ echo "  ✅ Quality Gates & Coverage Analysis"
 echo "  ✅ Staging & Production Deployment"
 echo ""
 echo "🔧 Next Steps:"
-echo "  1. Open Jenkins: http://localhost:9090"
-echo "  2. Navigate to job: http://localhost:9090/job/$JOB_NAME"
+echo "  1. Open Jenkins: http://localhost:9040"
+echo "  2. Navigate to job: http://localhost:9040/job/$JOB_NAME"
 echo "  3. Configure GitHub webhook (if needed)"
 echo "  4. Run the comprehensive pipeline"
 echo ""

@@ -4,8 +4,8 @@
 echo "🔗 Setting up GitHub Webhook for Jenkins Pipeline"
 echo "================================================"
 
-JENKINS_LOCAL_URL="http://localhost:9090"
-JENKINS_PUBLIC_URL="https://e77949f6bcb9.ngrok-free.app"
+JENKINS_LOCAL_URL="http://localhost:9040"
+JENKINS_PUBLIC_URL="https://23b77afcbbb1.ngrok-free.app"
 GITHUB_REPO="https://github.com/Navpan18/ShopSphere"
 WEBHOOK_URL="${JENKINS_PUBLIC_URL}/github-webhook/"
 

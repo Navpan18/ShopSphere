@@ -56,7 +56,7 @@ sleep 10
 
 # Check if Jenkins is running
 for i in {1..30}; do
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:9090 | grep -q "200"; then
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8090 | grep -q "200"; then
         log_success "Jenkins is running and accessible!"
         break
     else
@@ -76,7 +76,7 @@ echo ""
 log_success "🎉 Jenkins has been successfully restarted!"
 echo ""
 echo "📋 Jenkins Information:"
-echo "  🌐 Web Interface: http://localhost:9090"
+echo "  🌐 Web Interface: http://localhost:8090"
 echo "  🔌 Agent Port: 50000"
 echo "  🗄️ Database: PostgreSQL on port 5433"
 echo ""
@@ -91,8 +91,7 @@ echo "  🛑 Stop Jenkins: docker-compose -f jenkins/docker-compose.jenkins.yml 
 echo "  🔄 Restart Jenkins: $0"
 
 echo ""
-echo "🚀 Next Steps:"
-echo "  1. Open http://localhost:9090 in your browser"
+echo "🚀 Next Steps:"  echo "  1. Open http://localhost:9040 in your browser"
 echo "  2. Import your comprehensive pipeline job configuration"
 echo "  3. Set up GitHub webhook for automatic builds"
 echo "  4. Run your comprehensive testing pipeline"

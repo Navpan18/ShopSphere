@@ -44,7 +44,7 @@ log_success "All prerequisites satisfied"
 log_header "Starting Jenkins..."
 cd jenkins
 
-if ! curl -s -o /dev/null http://localhost:9090; then
+if ! curl -s -o /dev/null http://localhost:9040; then
     log_info "Jenkins not running, starting..."
     
     # Ensure network exists
@@ -56,7 +56,7 @@ if ! curl -s -o /dev/null http://localhost:9090; then
     
     log_info "Waiting for Jenkins to start..."
     for i in {1..30}; do
-        if curl -s -o /dev/null http://localhost:9090; then
+        if curl -s -o /dev/null http://localhost:9040; then
             log_success "Jenkins is running!"
             break
         fi
@@ -72,7 +72,7 @@ cd ..
 # Start ngrok if not running
 log_header "Starting ngrok..."
 
-if ! pgrep -f "ngrok.*9090" > /dev/null; then
+if ! pgrep -f "ngrok.*9040" > /dev/null; then
     log_info "Starting ngrok tunnel for Jenkins..."
     
     # Kill any existing ngrok processes
@@ -80,7 +80,7 @@ if ! pgrep -f "ngrok.*9090" > /dev/null; then
     sleep 2
     
     # Start ngrok in background
-    nohup ngrok http 9090 --log stdout > ngrok.log 2>&1 &
+    nohup ngrok http 9040 --log stdout > ngrok.log 2>&1 &
     
     log_info "Waiting for ngrok to establish tunnel..."
     sleep 10
@@ -108,7 +108,7 @@ log_header "Setting up Comprehensive Testing Pipeline..."
 # Download Jenkins CLI if not exists
 if [ ! -f "jenkins-cli.jar" ]; then
     log_info "Downloading Jenkins CLI..."
-    curl -s http://localhost:9090/jnlpJars/jenkins-cli.jar -o jenkins-cli.jar
+    curl -s http://localhost:9040/jnlpJars/jenkins-cli.jar -o jenkins-cli.jar
 fi
 
 # Wait for Jenkins to be fully ready
@@ -117,12 +117,12 @@ sleep 15
 
 # Check if comprehensive pipeline job exists
 JOB_NAME="ShopSphere-Comprehensive"
-if curl -s "http://localhost:9090/job/$JOB_NAME/api/json" | grep -q "name"; then
+if curl -s "http://localhost:9040/job/$JOB_NAME/api/json" | grep -q "name"; then
     log_warning "Job '$JOB_NAME' already exists, updating..."
-    java -jar jenkins-cli.jar -s http://localhost:9090 update-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml || log_warning "Failed to update job"
+    java -jar jenkins-cli.jar -s http://localhost:9040 update-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml || log_warning "Failed to update job"
 else
     log_info "Creating comprehensive pipeline job..."
-    java -jar jenkins-cli.jar -s http://localhost:9090 create-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml || log_error "Failed to create job"
+    java -jar jenkins-cli.jar -s http://localhost:9040 create-job "$JOB_NAME" < jenkins-comprehensive-job-config.xml || log_error "Failed to create job"
 fi
 
 # Generate summary
@@ -135,7 +135,7 @@ echo ""
 
 # Jenkins info
 echo "🏗️  ${YELLOW}Jenkins Information:${NC}"
-echo "   📍 Local URL:  http://localhost:9090"
+echo "   📍 Local URL:  http://localhost:9040"
 if [ -n "$PUBLIC_URL" ]; then
     echo "   🌐 Public URL: $PUBLIC_URL"
     echo "   📱 ngrok Web:  http://localhost:4040"
@@ -152,7 +152,7 @@ echo ""
 # Pipeline info
 echo "🧪 ${YELLOW}Comprehensive Testing Pipeline:${NC}"
 echo "   📛 Job Name: $JOB_NAME"
-echo "   🔗 Pipeline URL: http://localhost:9090/job/$JOB_NAME"
+echo "   🔗 Pipeline URL: http://localhost:9040/job/$JOB_NAME"
 if [ -n "$PUBLIC_URL" ]; then
     echo "   🌐 Public Pipeline: $PUBLIC_URL/job/$JOB_NAME"
 fi
@@ -171,8 +171,8 @@ echo ""
 
 # Next steps
 echo "🚀 ${YELLOW}Ready to Test:${NC}"
-echo "   1. Open Jenkins: ${CYAN}http://localhost:9090${NC}"
-echo "   2. Navigate to: ${CYAN}http://localhost:9090/job/$JOB_NAME${NC}"
+echo "   1. Open Jenkins: ${CYAN}http://localhost:9040${NC}"
+echo "   2. Navigate to: ${CYAN}http://localhost:9040/job/$JOB_NAME${NC}"
 echo "   3. Click 'Build with Parameters'"
 echo "   4. Configure test options and run"
 echo ""
@@ -196,10 +196,10 @@ cat > environment-urls.txt << EOF
 # ShopSphere Environment URLs
 # Generated: $(date)
 
-Jenkins Local: http://localhost:9090
+Jenkins Local: http://localhost:9040
 Jenkins Public: $PUBLIC_URL
 ngrok Dashboard: http://localhost:4040
-Pipeline Job: http://localhost:9090/job/$JOB_NAME
+Pipeline Job: http://localhost:9040/job/$JOB_NAME
 Public Pipeline: $PUBLIC_URL/job/$JOB_NAME
 Webhook URL: $PUBLIC_URL/github-webhook/
 
@@ -220,6 +220,6 @@ if command -v open &> /dev/null; then
     read -p "Open Jenkins in browser? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        open "http://localhost:9090/job/$JOB_NAME"
+        open "http://localhost:9040/job/$JOB_NAME"
     fi
 fi

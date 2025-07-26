@@ -221,7 +221,7 @@ https://818961da248f.ngrok-free.app/generic-webhook-trigger/invoke?token=shopsph
 ## 📞 Support & Documentation
 
 ### **Pipeline Access**
-- **Jenkins URL**: http://localhost:9090
+- **Jenkins URL**: http://localhost:9040
 - **Public URL**: https://818961da248f.ngrok-free.app
 - **Job Name**: ShopSphere-Webhook
 

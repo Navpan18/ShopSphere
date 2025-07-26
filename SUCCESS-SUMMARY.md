@@ -8,7 +8,7 @@
 - No more NullPointerException errors
 
 ✅ CURRENT STATUS:
-- Jenkins: ✅ Running (http://localhost:9090)
+- Jenkins: ✅ Running (http://localhost:9040)
 - ngrok: ✅ Active (https://e77949f6bcb9.ngrok-free.app)
 - Pipeline: ✅ Building from GitHub repository
 - Job: ShopSphere-Comprehensive-Pipeline (Build #2 running)

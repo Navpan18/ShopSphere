@@ -3,7 +3,7 @@
 # Install Git Plugin in Jenkins
 echo "🔧 Installing Git Plugin in Jenkins..."
 
-JENKINS_URL="http://localhost:9090"
+JENKINS_URL="http://localhost:9040"
 JENKINS_CLI="/tmp/jenkins-cli.jar"
 
 # Download Jenkins CLI if not exists
