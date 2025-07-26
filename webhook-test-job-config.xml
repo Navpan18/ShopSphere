@@ -1,0 +1,126 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <actions/>
+  <description>ShopSphere CI/CD Pipeline - Webhook Test (No Git Required)</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger">
+          <spec></spec>
+          <token>shopsphere-webhook-token</token>
+          <causeString>Triggered by GitHub webhook</causeString>
+          <silentResponse>false</silentResponse>
+          <shouldNotFlatten>false</shouldNotFlatten>
+          <regexpFilterText></regexpFilterText>
+          <regexpFilterExpression></regexpFilterExpression>
+        </org.jenkinsci.plugins.gwt.GenericTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>pipeline {
+    agent any
+    
+    environment {
+        APP_NAME = "shopsphere"
+        BUILD_NUMBER = "${env.BUILD_NUMBER}"
+        WEBHOOK_PAYLOAD = "${params.WEBHOOK_PAYLOAD ?: 'No payload'}"
+    }
+    
+    stages {
+        stage('🚀 Webhook Received') {
+            steps {
+                script {
+                    echo "=== Jenkins Webhook CI/CD Pipeline ==="
+                    echo "✅ Webhook successfully triggered Jenkins!"
+                    echo "Build Number: ${BUILD_NUMBER}"
+                    echo "Timestamp: ${new Date()}"
+                    echo "Triggered by: GitHub Webhook"
+                    echo "Project: ${APP_NAME}"
+                }
+            }
+        }
+        
+        stage('🔍 Environment Check') {
+            steps {
+                script {
+                    echo "=== Environment Information ==="
+                    echo "Jenkins Version: ${env.JENKINS_VERSION}"
+                    echo "Node Name: ${env.NODE_NAME}"
+                    echo "Workspace: ${env.WORKSPACE}"
+                    echo "Job Name: ${env.JOB_NAME}"
+                    echo "Build URL: ${env.BUILD_URL}"
+                }
+            }
+        }
+        
+        stage('📦 Simulate Build Process') {
+            steps {
+                script {
+                    echo "=== Simulating CI/CD Process ==="
+                    echo "🔧 Backend build simulation..."
+                    sleep(2)
+                    echo "✅ Backend build completed"
+                    
+                    echo "🎨 Frontend build simulation..."
+                    sleep(2)
+                    echo "✅ Frontend build completed"
+                    
+                    echo "🧪 Test execution simulation..."
+                    sleep(1)
+                    echo "✅ All tests passed"
+                    
+                    echo "🐳 Docker image build simulation..."
+                    sleep(1)
+                    echo "✅ Docker images ready"
+                    
+                    echo "🚀 Deployment simulation..."
+                    sleep(1)
+                    echo "✅ Deployment completed successfully"
+                }
+            }
+        }
+        
+        stage('📊 Summary') {
+            steps {
+                script {
+                    echo "=== Build Summary ==="
+                    echo "🎉 Jenkins webhook integration is working!"
+                    echo "✅ Build #${BUILD_NUMBER} completed successfully"
+                    echo "⏱️  Total build time: ~7 seconds"
+                    echo "🔗 Webhook URL working correctly"
+                    echo "📈 Ready for GitHub integration"
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            script {
+                echo "🎉 SUCCESS: Jenkins CI/CD pipeline executed successfully!"
+                echo "✅ Webhook → Jenkins integration is working perfectly"
+                echo "🚀 Ready for production GitHub integration"
+            }
+        }
+        failure {
+            script {
+                echo "❌ FAILURE: Pipeline execution failed"
+                echo "🔧 Check the logs above for troubleshooting"
+            }
+        }
+        always {
+            script {
+                echo "=== Pipeline Completed ==="
+                echo "📊 Result: ${currentBuild.result ?: 'SUCCESS'}"
+                echo "⏰ Duration: ${currentBuild.durationString}"
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

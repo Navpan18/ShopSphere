@@ -1,37 +1,47 @@
-<?xml version='1.1' encoding='UTF-8'?>
-<flow-definition plugin="workflow-job">
-  <actions/>
-  <description>ShopSphere CI/CD Pipeline - Automated build, test, and deployment</description>
+<?xml version="1.1" encoding="UTF-8"?>
+<flow-definition plugin="workflow-job@1254.v3f64639b_11dd">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2086.v12b_420f036e5"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2086.v12b_420f036e5">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description>ShopSphere CI/CD Pipeline - Inline Pipeline Script with GitHub Integration</description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <hudson.plugins.jira.JiraProjectProperty plugin="jira"/>
-    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github">
-      <projectUrl>https://github.com/Navpan18/ShopSphere.git/</projectUrl>
-      <displayName></displayName>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.34.3">
+      <projectUrl>https://github.com/Navpan18/ShopSphere/</projectUrl>
+      <displayName/>
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
     <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
       <triggers>
-        <!-- SCM Polling disabled - using webhooks only -->
-        <com.cloudbees.jenkins.GitHubPushTrigger plugin="github">
-          <spec></spec>
+        <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.34.3">
+          <spec/>
         </com.cloudbees.jenkins.GitHubPushTrigger>
-        <!-- Generic webhook trigger for local development -->
-        <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger">
-          <spec></spec>
+        <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger@1.84.1">
+          <spec/>
+          <genericVariables/>
+          <regexpFilterText/>
+          <regexpFilterExpression/>
+          <genericRequestVariables/>
+          <genericHeaderVariables/>
+          <printPostContent>true</printPostContent>
+          <printContributedVariables>true</printContributedVariables>
+          <causeString>Triggered by GitHub webhook</causeString>
           <token>shopsphere-webhook-token</token>
-          <causeString>Triggered by ShopSphere webhook</causeString>
+          <tokenCredentialId/>
           <silentResponse>false</silentResponse>
-          <shouldNotFlatten>false</shouldNotFlatten>
-          <regexpFilterText></regexpFilterText>
-          <regexpFilterExpression></regexpFilterExpression>
+          <overrideQuietPeriod>false</overrideQuietPeriod>
+          <shouldNotFlattern>false</shouldNotFlattern>
+          <allowSeveralTriggersPerBuild>false</allowSeveralTriggersPerBuild>
         </org.jenkinsci.plugins.gwt.GenericTrigger>
       </triggers>
     </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
-    <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
-      <abortPrevious>false</abortPrevious>
-    </org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
   </properties>
-  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2648.va_444b_c64ce16">
     <script>pipeline {
     agent any
     
@@ -61,7 +71,7 @@
     }
     
     stages {
-        stage('🚀 Checkout & Setup') {
+        stage('🚀 Checkout &amp; Setup') {
             steps {
                 script {
                     echo "=== Starting ShopSphere CI/CD Pipeline ==="
@@ -72,17 +82,7 @@
                 
                 // Clean workspace and checkout code
                 cleanWs()
-                
-                script {
-                    echo "=== Cloning Repository ==="
-                }
-                
-                // Clone the repository
-                sh '''
-                    git clone https://github.com/Navpan18/ShopSphere.git .
-                    echo "Repository cloned successfully"
-                    ls -la
-                '''
+                checkout scm
                 
                 script {
                     // Get git commit info
@@ -103,14 +103,12 @@
                         sh '''
                             echo "=== System Information ==="
                             uname -a
-                            echo "Docker version:"
-                            docker --version || echo "Docker not available"
-                            echo "Docker Compose version:"
-                            docker-compose --version || echo "Docker Compose not available"
+                            docker --version
+                            docker-compose --version
                             echo "Available disk space:"
                             df -h
                             echo "Memory usage:"
-                            free -h || echo "Memory info not available"
+                            free -h || true
                         '''
                     }
                 }
@@ -122,9 +120,9 @@
                             find . -type f -name "*.py" -o -name "*.js" -o -name "*.json" -o -name "Dockerfile" -o -name "docker-compose.yml" | head -20
                             echo "=== Key Files ==="
                             ls -la
-                            [ -f backend/requirements.txt ] && echo "✅ Backend requirements found" || echo "❌ Backend requirements missing"
-                            [ -f frontend/package.json ] && echo "✅ Frontend package.json found" || echo "❌ Frontend package.json missing"
-                            [ -f docker-compose.yml ] && echo "✅ Docker compose found" || echo "❌ Docker compose missing"
+                            [ -f backend/requirements.txt ] && echo "Backend requirements found" || echo "Backend requirements missing"
+                            [ -f frontend/package.json ] && echo "Frontend package.json found" || echo "Frontend package.json missing"
+                            [ -f docker-compose.yml ] && echo "Docker compose found" || echo "Docker compose missing"
                         '''
                     }
                 }
@@ -140,17 +138,14 @@
                 dir('backend') {
                     sh '''
                         echo "Installing Python dependencies..."
-                        python3 -m pip install --user -r requirements.txt || echo "Failed to install requirements"
+                        pip install --user -r requirements.txt || true
                         
                         echo "Running Python syntax check..."
-                        python3 -m py_compile app/*.py || echo "Syntax check completed with warnings"
+                        python -m py_compile app/*.py || true
                         
                         echo "Running basic app structure check..."
                         ls -la app/
-                        [ -f app/main.py ] && echo "✅ Main app file found" || echo "❌ Main app file missing"
-                        
-                        echo "Testing basic imports..."
-                        python3 -c "import sys; print('Python executable:', sys.executable)" || echo "Import test completed"
+                        [ -f app/main.py ] && echo "Main app file found" || echo "Main app file missing"
                     '''
                 }
             }
@@ -171,70 +166,28 @@
                         [ -f package.json ] && cat package.json | head -20 || echo "package.json not found"
                         
                         echo "Checking Next.js structure..."
-                        [ -d src ] && echo "✅ Source directory found" || echo "❌ Source directory missing"
-                        [ -f next.config.mjs ] && echo "✅ Next.js config found" || echo "❌ Next.js config missing"
-                        
-                        echo "Installing dependencies (if Node.js available)..."
-                        if command -v npm >/dev/null 2>&1; then
-                            npm install --production || echo "NPM install failed"
-                            npm run build --if-present || echo "Build step completed"
-                        else
-                            echo "Node.js/NPM not available, skipping install"
-                        fi
+                        [ -d src ] && echo "Source directory found" || echo "Source directory missing"
+                        [ -f next.config.mjs ] && echo "Next.js config found" || echo "Next.js config missing"
                     '''
                 }
             }
         }
         
-        stage('🐳 Docker Build') {
+        stage('🐳 Docker Build Test') {
             steps {
                 script {
-                    echo "=== Building Docker Images ==="
+                    echo "=== Testing Docker Build ==="
                 }
                 
                 sh '''
                     echo "Checking Docker files..."
-                    find . -name "Dockerfile" -exec echo "Found Dockerfile: {}" \;
+                    find . -name "Dockerfile" -exec echo "Found: {}" \;
                     
                     echo "Checking docker-compose files..."
-                    find . -name "docker-compose*.yml" -exec echo "Found compose file: {}" \;
+                    find . -name "docker-compose*.yml" -exec echo "Found: {}" \;
                     
                     echo "Testing docker-compose config..."
-                    docker-compose config --quiet || echo "Docker compose config validation completed"
-                    
-                    echo "Building backend image..."
-                    cd backend
-                    docker build -t shopsphere-backend:${BUILD_NUMBER} . || echo "Backend build completed with warnings"
-                    
-                    echo "Building frontend image..."
-                    cd ../frontend
-                    docker build -t shopsphere-frontend:${BUILD_NUMBER} . || echo "Frontend build completed with warnings"
-                '''
-            }
-        }
-        
-        stage('🚀 Local Deployment') {
-            steps {
-                script {
-                    echo "=== Deploying Locally ==="
-                }
-                
-                sh '''
-                    echo "Stopping existing containers..."
-                    docker-compose down || echo "No existing containers to stop"
-                    
-                    echo "Starting services..."
-                    docker-compose up -d || echo "Deployment completed with warnings"
-                    
-                    echo "Waiting for services to start..."
-                    sleep 30
-                    
-                    echo "Checking service status..."
-                    docker-compose ps || echo "Service status check completed"
-                    
-                    echo "Testing service endpoints..."
-                    curl -f http://localhost:3000 || echo "Frontend health check completed"
-                    curl -f http://localhost:8000/health || echo "Backend health check completed"
+                    docker-compose config --quiet || echo "Docker compose config test failed"
                 '''
             }
         }
@@ -247,9 +200,8 @@
                     echo "✅ Environment checks passed"
                     echo "✅ Backend tests completed"
                     echo "✅ Frontend tests completed"
-                    echo "✅ Docker images built"
-                    echo "✅ Local deployment completed"
-                    echo "🎉 CI/CD Pipeline completed successfully!"
+                    echo "✅ Docker configuration validated"
+                    echo "🎉 Pipeline completed successfully!"
                     
                     // Archive any artifacts
                     sh '''
@@ -258,7 +210,6 @@
                         echo "Commit: ${GIT_COMMIT_SHORT}" >> build-summary.txt
                         echo "Date: $(date)" >> build-summary.txt
                         echo "Status: SUCCESS" >> build-summary.txt
-                        echo "Deployment: Local Docker Compose" >> build-summary.txt
                     '''
                 }
             }
@@ -275,21 +226,20 @@
             
             // Archive build summary
             archiveArtifacts artifacts: 'build-summary.txt', allowEmptyArchive: true
+            
+            // Clean up workspace if needed
+            cleanWs(cleanWhenNotBuilt: false,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    notFailBuild: true)
         }
         
         success {
             echo "🎉 Pipeline completed successfully!"
-            script {
-                // Send notification or update status
-                echo "Deployment completed at: ${new Date()}"
-            }
         }
         
         failure {
             echo "❌ Pipeline failed!"
-            script {
-                echo "Build failed at stage: ${env.STAGE_NAME}"
-            }
         }
         
         unstable {

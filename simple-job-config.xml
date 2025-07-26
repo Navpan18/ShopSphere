@@ -1,0 +1,51 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <actions/>
+  <description>Simple ShopSphere Pipeline Test</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.SCMTrigger>
+          <spec></spec>
+          <ignorePostCommitHooks>false</ignorePostCommitHooks>
+        </hudson.triggers.SCMTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>pipeline {
+    agent any
+    
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello ShopSphere CI/CD Pipeline!'
+                echo "Build Number: ${env.BUILD_NUMBER}"
+                echo "Workspace: ${env.WORKSPACE}"
+            }
+        }
+        
+        stage('Environment Check') {
+            steps {
+                sh '''
+                    echo "Current directory: $(pwd)"
+                    echo "Docker version:"
+                    docker --version || echo "Docker not available"
+                    echo "Test completed successfully!"
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Pipeline completed!'
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
