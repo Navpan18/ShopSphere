@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # ShopSphere Environment Status After Power Restart
+
 # Generated on: $(date)
 
 echo "🔄 SHOPSPHERE ENVIRONMENT STATUS AFTER RESTART"
@@ -8,20 +9,20 @@ echo "=============================================="
 echo ""
 
 echo "✅ JENKINS STATUS:"
-echo "   🌐 Local URL: http://localhost:9040"
-echo "   🌍 Public URL: https://e77949f6bcb9.ngrok-free.app"
-echo "   📊 Status: Running and accessible"
+echo " 🌐 Local URL: http://localhost:9040"
+echo " 🌍 Public URL: https://e77949f6bcb9.ngrok-free.app"
+echo " 📊 Status: Running and accessible"
 echo ""
 
 echo "✅ NGROK STATUS:"
-echo "   🔌 Tunnel: Active"
-echo "   🌍 Public URL: https://e77949f6bcb9.ngrok-free.app"
-echo "   📋 Dashboard: http://localhost:4040"
+echo " 🔌 Tunnel: Active"
+echo " 🌍 Public URL: https://e77949f6bcb9.ngrok-free.app"
+echo " 📋 Dashboard: http://localhost:4040"
 echo ""
 
 echo "✅ DOCKER CONTAINERS:"
-echo "   📦 Jenkins: Running (port 9040)"
-echo "   📦 PostgreSQL: Running (port 5433)"
+echo " 📦 Jenkins: Running (port 9040)"
+echo " 📦 PostgreSQL: Running (port 5433)"
 echo ""
 
 echo "🎯 NEXT STEPS TO RESUME PIPELINE WORK:"
