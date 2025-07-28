@@ -1479,7 +1479,7 @@ EOF
                 '''
                 
                 // Generate comprehensive report
-                sh '''
+                sh """
                     echo "Generating comprehensive test report..."
                     cat > build-artifacts/pipeline-summary.html << 'EOF'
 <!DOCTYPE html>
@@ -1498,7 +1498,7 @@ EOF
 <body>
     <div class="header">
         <h1>🎯 ShopSphere Comprehensive Testing Pipeline</h1>
-        <p>Build: ${BUILD_NUMBER} | Commit: ${GIT_COMMIT_SHORT} | Branch: ${BRANCH_NAME}</p>
+        <p>Build: ${BUILD_NUMBER} | Commit: ${GIT_COMMIT_SHORT} | Branch: ${BRANCH_NAME ?: 'main'}</p>
     </div>
     
     <div class="section">
@@ -1518,7 +1518,7 @@ EOF
 </body>
 </html>
 EOF
-                '''
+                """
             }
         }
         
@@ -1526,11 +1526,11 @@ EOF
             script {
                 echo "=== ✅ COMPREHENSIVE PIPELINE SUCCESSFUL ==="
                 
-                sh '''
+                sh """
                     echo "🎉 All tests passed successfully!"
                     echo "📊 Build: ${BUILD_NUMBER}"
                     echo "🔄 Commit: ${GIT_COMMIT_SHORT}"
-                    echo "⏱️ Duration: ${currentBuild.durationString}"
+                    echo "⏱️ Duration: Build completed"
                     echo "🌟 Quality: All quality gates passed"
                     echo "🌐 Webhook: GitHub integration working via ngrok"
                     
@@ -1541,8 +1541,8 @@ Pipeline Execution Summary
 ✅ Status: SUCCESS
 🏗️ Build: ${BUILD_NUMBER}
 🔄 Commit: ${GIT_COMMIT_SHORT}
-🌿 Branch: ${BRANCH_NAME}
-⏱️ Duration: ${currentBuild.durationString}
+🌿 Branch: ${BRANCH_NAME ?: 'main'}
+⏱️ Duration: Build completed
 🌐 Trigger: GitHub Webhook via ngrok
 
 Services Tested:
@@ -1561,7 +1561,7 @@ Quality Gates Passed:
 - ✅ Performance Tests
 - ✅ Code Coverage
 EOF
-                '''
+                """
                 
                 // Send success notification
                 // Add notification logic here (Slack, email, etc.)
@@ -1572,12 +1572,12 @@ EOF
             script {
                 echo "=== ❌ PIPELINE FAILED ==="
                 
-                sh '''
-                    echo "💥 Pipeline failed at stage: ${env.STAGE_NAME}"
+                sh """
+                    echo "💥 Pipeline failed at stage: \${STAGE_NAME:-Unknown}"
                     echo "🔍 Check the logs and reports for details"
                     echo "📊 Build: ${BUILD_NUMBER}"
                     echo "🔄 Commit: ${GIT_COMMIT_SHORT}"
-                '''
+                """
                 
                 // Send failure notification with details
                 // Add notification logic here
@@ -1588,11 +1588,11 @@ EOF
             script {
                 echo "=== ⚠️ PIPELINE UNSTABLE ==="
                 
-                sh '''
+                sh """
                     echo "⚠️ Some tests failed but pipeline continued"
                     echo "📊 Review test results and coverage reports"
                     echo "🔧 Fix failing tests before merging"
-                '''
+                """
                 
                 // Send unstable notification
                 // Add notification logic here
