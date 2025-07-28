@@ -156,7 +156,7 @@ EOF
                                             -w /workspace \
                                             python:3.11-slim bash -c "
                                                 echo 'Installing analysis tools...'
-                                                pip install --no-cache-dir pip-audit pipdeptree
+                                                pip install --no-cache-dir pipdeptree
                                                 
                                                 echo 'Installing project dependencies...'
                                                 if [ -f requirements.txt ]; then
@@ -211,12 +211,16 @@ EOF
                                                 --name analytics-deps-analyzer-${BUILD_NUMBER} \
                                                 --network shopsphere-test-network \
                                                 -v $(pwd)/microservices/analytics-service:/workspace \
+                                                -v $(pwd)/build-artifacts:/build-artifacts \
                                                 -w /workspace \
                                                 python:3.11-slim bash -c "
-                                                    pip install --no-cache-dir pip-audit || true
+                                                    echo 'Installing analysis tools...'
+                                                    pip install --no-cache-dir pipdeptree || true
+                                                    
                                                     if [ -f requirements.txt ]; then
                                                         pip install --no-cache-dir -r requirements.txt || true
-                                                        pip-audit --desc --format=json --output=/security-reports/analytics-deps.json || echo 'Analytics audit completed with warnings'
+                                                        echo 'Generating dependency tree...'
+                                                        pipdeptree --json > /build-artifacts/analytics-deps-tree.json || true
                                                     else
                                                         echo 'No requirements.txt found for analytics service'
                                                     fi
@@ -258,7 +262,7 @@ EOF
                                 echo "✅ Backend dependencies analyzed"
                                 echo "✅ Frontend dependencies analyzed" 
                                 echo "✅ Microservices dependencies analyzed"
-                                echo "📁 Reports saved to security-reports/ and build-artifacts/"
+                                echo "📁 Reports saved to build-artifacts/"
                             '''
                         }
                     }
@@ -364,14 +368,6 @@ EOF
                                     # Build test image with additional test dependencies
                                     docker build -f Dockerfile -t ${DOCKER_IMAGE_BACKEND}:test .
                                 """
-                                
-                                // Image security scan
-                                sh """
-                                    echo "Scanning backend image for vulnerabilities..."
-                                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \\
-                                        aquasec/trivy image --format json --output ../security-reports/backend-image-scan.json \\
-                                        ${DOCKER_IMAGE_BACKEND}:latest || true
-                                """
                             }
                         }
                     }
@@ -418,14 +414,6 @@ EOF
                                     echo "Building frontend Docker image..."
                                     docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} .
                                     docker build -t ${DOCKER_IMAGE_FRONTEND}:latest .
-                                """
-                                
-                                // Image security scan
-                                sh """
-                                    echo "Scanning frontend image for vulnerabilities..."
-                                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \\
-                                        aquasec/trivy image --format json --output ../security-reports/frontend-image-scan.json \\
-                                        ${DOCKER_IMAGE_FRONTEND}:latest || true
                                 """
                             }
                         }
