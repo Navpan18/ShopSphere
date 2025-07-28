@@ -381,13 +381,30 @@ EOF
                                 
                                 sh '''
                                     echo "Installing dependencies with exact versions..."
-                                    npm ci --silent
+                                    echo "Node version: $(node --version)"
+                                    echo "NPM version: $(npm --version)"
+                                    echo "Working directory: $(pwd)"
+                                    echo "Package.json exists: $(ls -la package.json)"
+                                    
+                                    # Use timeout to prevent hanging
+                                    timeout 300 npm ci --silent || {
+                                        echo "npm ci failed or timed out, trying npm install..."
+                                        timeout 300 npm install || {
+                                            echo "npm install also failed, skipping dependencies"
+                                            exit 1
+                                        }
+                                    }
+                                    
+                                    echo "Dependencies installed successfully"
                                     
                                     echo "Running linting..."
-                                    npm run lint || true
+                                    npm run lint || echo "Linting completed with warnings"
                                     
                                     echo "Building production bundle..."
-                                    npm run build
+                                    npm run build || {
+                                        echo "Build failed, checking for specific errors..."
+                                        npm run build --verbose
+                                    }
                                     
                                     echo "Analyzing bundle size..."
                                     npx next-bundle-analyzer --help || echo "Bundle analyzer not available"
