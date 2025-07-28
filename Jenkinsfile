@@ -329,7 +329,7 @@ EOF
                     }
                     post {
                         always {
-                            publishTestResults testResultsPattern: 'test-results/backend-junit.xml'
+                            junit 'test-results/backend-junit.xml'
                             publishHTML([
                                 allowMissing: false,
                                 alwaysLinkToLastBuild: true,
@@ -373,7 +373,7 @@ EOF
                     }
                     post {
                         always {
-                            publishTestResults testResultsPattern: 'frontend/junit.xml'
+                            junit 'frontend/junit.xml'
                             publishHTML([
                                 allowMissing: false,
                                 alwaysLinkToLastBuild: true,
@@ -1429,7 +1429,7 @@ EOF
                 ''', allowEmptyArchive: true
                 
                 // Publish all test results
-                publishTestResults testResultsPattern: 'test-results/*-junit.xml'
+                junit 'test-results/*-junit.xml'
                 
                 // Clean up Docker resources
                 sh '''
