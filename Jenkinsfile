@@ -149,7 +149,7 @@ EOF
                                         
                                         # Run backend dependency analysis in isolated container
                                         docker run --rm \
-                                            --name backend-deps-analyzer \
+                                            --name backend-deps-analyzer-${BUILD_NUMBER} \
                                             --network shopsphere-test-network \
                                             -v $(pwd)/backend:/workspace \
                                             -v $(pwd)/security-reports:/security-reports \
@@ -175,33 +175,41 @@ EOF
                                                 echo 'Backend dependency analysis completed successfully ✅'
                                             "
                                     '''
-                                },
-                                "Frontend Dependencies": {
-                                    sh '''
-                                        echo "=== 📦 Frontend Dependencies Analysis in Docker Container ==="
+                                },                        "Frontend Dependencies": {
+                            sh '''
+                                echo "=== 📦 Frontend Dependencies Analysis in Docker Container ==="
+                                
+                                # Check if frontend directory and package.json exist first
+                                if [ ! -f "frontend/package.json" ]; then
+                                    echo "❌ frontend/package.json not found! Skipping frontend dependency analysis"
+                                    exit 0
+                                fi
+                                
+                                # Run frontend dependency analysis in isolated container
+                                docker run --rm \
+                                    --name frontend-deps-analyzer-${BUILD_NUMBER} \
+                                    --network shopsphere-test-network \
+                                    -v $(pwd)/frontend:/workspace \
+                                    -v $(pwd)/security-reports:/security-reports \
+                                    -v $(pwd)/build-artifacts:/build-artifacts \
+                                    -w /workspace \
+                                    node:18-alpine sh -c "
+                                        echo 'Checking package.json exists...'
+                                        ls -la package.json || (echo 'package.json not found in workspace!' && exit 1)
                                         
-                                        # Run frontend dependency analysis in isolated container
-                                        docker run --rm \
-                                            --name frontend-deps-analyzer \
-                                            --network shopsphere-test-network \
-                                            -v $(pwd)/frontend:/workspace \
-                                            -v $(pwd)/security-reports:/security-reports \
-                                            -v $(pwd)/build-artifacts:/build-artifacts \
-                                            -w /workspace \
-                                            node:18-alpine sh -c "
-                                                echo 'Installing package-lock...'
-                                                npm install --package-lock-only || echo 'Package lock generation completed'
-                                                
-                                                echo 'Running security audit...'
-                                                npm audit --json > /security-reports/frontend-deps.json || echo 'NPM audit completed with warnings'
-                                                
-                                                echo 'Generating dependency tree...'
-                                                npm list --json > /build-artifacts/frontend-deps-tree.json || echo 'Dependency tree generated'
-                                                
-                                                echo 'Frontend dependency analysis completed successfully ✅'
-                                            "
-                                    '''
-                                },
+                                        echo 'Installing package-lock...'
+                                        npm install --package-lock-only || echo 'Package lock generation completed'
+                                        
+                                        echo 'Running security audit...'
+                                        npm audit --json > /security-reports/frontend-deps.json || echo 'NPM audit completed with warnings'
+                                        
+                                        echo 'Generating dependency tree...'
+                                        npm list --json > /build-artifacts/frontend-deps-tree.json || echo 'Dependency tree generated'
+                                        
+                                        echo 'Frontend dependency analysis completed successfully ✅'
+                                    "
+                            '''
+                        },
                                 "Microservices Dependencies": {
                                     sh '''
                                         echo "=== 📦 Microservices Dependencies Analysis in Docker Containers ==="
@@ -210,7 +218,7 @@ EOF
                                         if [ -d "microservices/analytics-service" ]; then
                                             echo "Analyzing Analytics Service..."
                                             docker run --rm \
-                                                --name analytics-deps-analyzer \
+                                                --name analytics-deps-analyzer-${BUILD_NUMBER} \
                                                 --network shopsphere-test-network \
                                                 -v $(pwd)/microservices/analytics-service:/workspace \
                                                 -v $(pwd)/security-reports:/security-reports \
@@ -233,7 +241,7 @@ EOF
                                         if [ -d "microservices/notification-service" ]; then
                                             echo "Analyzing Notification Service..."
                                             docker run --rm \
-                                                --name notifications-deps-analyzer \
+                                                --name notifications-deps-analyzer-${BUILD_NUMBER} \
                                                 --network shopsphere-test-network \
                                                 -v $(pwd)/microservices/notification-service:/workspace \
                                                 -v $(pwd)/security-reports:/security-reports \
@@ -276,7 +284,7 @@ EOF
                             # Backend Code Quality Analysis in Container
                             echo "=== Backend Code Quality Analysis ==="
                             docker run --rm \
-                                --name backend-quality-check \
+                                --name backend-quality-check-${BUILD_NUMBER} \
                                 --network shopsphere-test-network \
                                 -v $(pwd)/backend:/workspace \
                                 -v $(pwd)/build-artifacts:/build-artifacts \
@@ -304,16 +312,23 @@ EOF
                                     
                                     echo 'Backend code quality analysis completed ✅'
                                 "
-                            
-                            # Frontend Code Quality Analysis in Container
-                            echo "=== Frontend Code Quality Analysis ==="
+                                 # Frontend Code Quality Analysis in Container
+                        echo "=== Frontend Code Quality Analysis ==="
+                        
+                        # Check if frontend directory and package.json exist first
+                        if [ ! -f "frontend/package.json" ]; then
+                            echo "❌ frontend/package.json not found! Skipping frontend quality checks"
+                        else
                             docker run --rm \
-                                --name frontend-quality-check \
+                                --name frontend-quality-check-${BUILD_NUMBER} \
                                 --network shopsphere-test-network \
                                 -v $(pwd)/frontend:/workspace \
                                 -v $(pwd)/build-artifacts:/build-artifacts \
                                 -w /workspace \
                                 node:18-alpine sh -c "
+                                    echo 'Checking package.json exists...'
+                                    ls -la package.json || (echo 'package.json not found in workspace!' && exit 1)
+                                    
                                     echo 'Installing frontend dependencies...'
                                     npm install || echo 'NPM install completed with warnings'
                                     
@@ -333,6 +348,7 @@ EOF
                                     
                                     echo 'Frontend code quality analysis completed ✅'
                                 "
+                        fi
                             
                             echo "=== 📊 Code Quality Summary ==="
                             echo "✅ Backend code quality checked"
