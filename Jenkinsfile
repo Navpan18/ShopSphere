@@ -1229,7 +1229,7 @@ for t in threads:
 ## Build Information
 - Build Number: ${BUILD_NUMBER}
 - Commit: ${GIT_COMMIT_SHORT}
-- Branch: ${BRANCH_NAME}
+- Branch: ${env.BRANCH_NAME ?: 'main'}
 - Timestamp: $(date)
 
 ## Test Coverage Summary
@@ -1498,7 +1498,7 @@ EOF
 <body>
     <div class="header">
         <h1>🎯 ShopSphere Comprehensive Testing Pipeline</h1>
-        <p>Build: ${BUILD_NUMBER} | Commit: ${GIT_COMMIT_SHORT} | Branch: ${BRANCH_NAME ?: 'main'}</p>
+        <p>Build: ${BUILD_NUMBER} | Commit: ${GIT_COMMIT_SHORT} | Branch: ${env.BRANCH_NAME ?: 'main'}</p>
     </div>
     
     <div class="section">
@@ -1541,7 +1541,7 @@ Pipeline Execution Summary
 ✅ Status: SUCCESS
 🏗️ Build: ${BUILD_NUMBER}
 🔄 Commit: ${GIT_COMMIT_SHORT}
-🌿 Branch: ${BRANCH_NAME ?: 'main'}
+🌿 Branch: ${env.BRANCH_NAME ?: 'main'}
 ⏱️ Duration: Build completed
 🌐 Trigger: GitHub Webhook via ngrok
 
