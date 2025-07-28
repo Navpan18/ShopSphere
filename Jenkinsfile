@@ -2,26 +2,8 @@ pipeline {
     agent any
     
     environment {
-        // Basic configurations
-        APP_NAME = "shopsphere"
-        BUILD_NUMBER = "${env.BUILD_NUMBER}"
-        GIT_COMMIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
-        
-        // Test configurations
-        NODE_ENV = "test"
-        
-        // Database configurations for testing
-        POSTGRES_DB = "shopdb_test"
-        POSTGRES_USER = "testuser"
-        POSTGRES_PASSWORD = "testpass123"
-        
-        // Service URLs for testing
-        BACKEND_URL = "http://localhost:8001"
-        FRONTEND_URL = "http://localhost:3000"
-        ANALYTICS_URL = "http://localhost:8002"
-        NOTIFICATIONS_URL = "http://localhost:8003"
-        
         // Docker configurations
+        DOCKER_REGISTRY = "localhost:5000"
         DOCKER_IMAGE_BACKEND = "shopsphere-backend"
         DOCKER_IMAGE_FRONTEND = "shopsphere-frontend"
         DOCKER_IMAGE_ANALYTICS = "shopsphere-analytics"
