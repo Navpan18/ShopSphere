@@ -58,20 +58,19 @@ check_docker_compose() {
     fi
     
     print_success "Docker Compose is installed"
-}
-
-# Check if ports are available
+}    # Check if ports are available
 check_ports() {
     print_status "Checking if required ports are available..."
     
-    ports=(9090 50000 5433)
+    ports=(9040 50000 5433)
     
     for port in "${ports[@]}"; do
         if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null ; then
             print_warning "Port $port is already in use"
-            if [ "$port" = "9090" ]; then
-                print_error "Jenkins port 9090 is occupied. Please free it or change the port in docker-compose.jenkins.yml"
-                exit 1
+            if [ "$port" = "9040" ]; then
+                print_warning "Jenkins port 9040 is occupied. Stopping existing Jenkins..."
+                docker-compose -f jenkins/docker-compose.jenkins.yml down 2>/dev/null || true
+                sleep 2
             fi
         else
             print_success "Port $port is available"
@@ -130,7 +129,7 @@ start_jenkins() {
     docker-compose -f jenkins/docker-compose.jenkins.yml up -d
     
     print_success "Jenkins services started"
-    print_status "Jenkins will be available at: http://localhost:9090"
+    print_status "Jenkins will be available at: http://localhost:9040"
 }
 
 # Wait for Jenkins to be ready
@@ -141,18 +140,20 @@ wait_for_jenkins() {
     attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        if curl -s -f http://localhost:9090 > /dev/null 2>&1; then
+        if curl -s -f http://localhost:9040 > /dev/null 2>&1; then
             print_success "Jenkins is ready!"
             break
         fi
         
         echo -n "."
-        sleep 10
+        sleep 3
         ((attempt++))
     done
     
     if [ $attempt -gt $max_attempts ]; then
         print_error "Jenkins failed to start within expected time"
+        print_status "Checking Jenkins logs..."
+        docker logs shopsphere_jenkins --tail 20
         exit 1
     fi
 }
@@ -187,7 +188,7 @@ To enable automatic builds on git commits, follow these steps:
 1. Go to your GitHub repository
 2. Navigate to Settings > Webhooks
 3. Click "Add webhook"
-4. Set Payload URL to: http://your-server-ip:9090/github-webhook/
+4. Set Payload URL to: http://your-server-ip:9040/github-webhook/
 5. Set Content type to: application/json
 6. Select "Just the push event"
 7. Check "Active"
@@ -198,7 +199,7 @@ To enable automatic builds on git commits, follow these steps:
 If you're running locally and want to test webhooks:
 
 1. Install ngrok: brew install ngrok (on macOS)
-2. Run: ngrok http 9090
+2. Run: ngrok http 9040
 3. Use the https URL provided by ngrok as your webhook URL
 4. Example: https://abc123.ngrok.io/github-webhook/
 
@@ -260,7 +261,7 @@ show_final_instructions() {
     
     echo
     echo "=== Next Steps ==="
-    echo "1. Open Jenkins: http://localhost:9090"
+    echo "1. Open Jenkins: http://localhost:9040"
     echo "2. Login with initial admin password (check jenkins-admin-password.txt)"
     echo "3. Install suggested plugins"
     echo "4. Create admin user"
@@ -276,7 +277,7 @@ show_final_instructions() {
     echo "=== Troubleshooting ==="
     echo "• If Jenkins fails to start, check: docker logs shopsphere_jenkins"
     echo "• If port conflicts occur, update docker-compose.jenkins.yml"
-    echo "• For webhook testing locally, use ngrok: ngrok http 9090"
+    echo "• For webhook testing locally, use ngrok: ngrok http 9040"
     echo
 }
 
