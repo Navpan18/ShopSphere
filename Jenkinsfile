@@ -1131,6 +1131,9 @@ EOF
                         sh '''
                             echo "=== 🔒 Static Application Security Testing ==="
                             
+                            # Ensure security-reports directory exists
+                            mkdir -p security-reports
+                            
                             echo "Installing security tools..."
                             pip install bandit safety semgrep
                             npm install -g eslint-plugin-security
@@ -1148,6 +1151,31 @@ EOF
                             
                             echo "Running ESLint security scan on frontend..."
                             cd ../frontend
+                            
+                            # Create .eslintrc.security.js if it doesn't exist
+                            if [ ! -f .eslintrc.security.js ]; then
+                                cat > .eslintrc.security.js << 'EOF'
+module.exports = {
+  extends: ['plugin:security/recommended'],
+  plugins: ['security'],
+  rules: {
+    'security/detect-object-injection': 'warn',
+    'security/detect-non-literal-regexp': 'warn',
+    'security/detect-unsafe-regex': 'warn',
+    'security/detect-buffer-noassert': 'warn',
+    'security/detect-child-process': 'warn',
+    'security/detect-disable-mustache-escape': 'warn',
+    'security/detect-eval-with-expression': 'warn',
+    'security/detect-no-csrf-before-method-override': 'warn',
+    'security/detect-non-literal-fs-filename': 'warn',
+    'security/detect-non-literal-require': 'warn',
+    'security/detect-possible-timing-attacks': 'warn',
+    'security/detect-pseudoRandomBytes': 'warn'
+  }
+};
+EOF
+                            fi
+                            
                             npx eslint src/ --ext .js,.jsx,.ts,.tsx \\
                                 --config .eslintrc.security.js \\
                                 --format json \\
@@ -1161,23 +1189,32 @@ EOF
                         sh '''
                             echo "=== 🐳 Container Security Scanning ==="
                             
+                            # Ensure security-reports directory exists
+                            mkdir -p security-reports
+                            
                             echo "Running comprehensive Trivy scans..."
                             
-                            # Scan all images
+                            # Scan all images with proper volume mounting
                             for image in ${DOCKER_IMAGE_BACKEND} ${DOCKER_IMAGE_FRONTEND} ${DOCKER_IMAGE_ANALYTICS} ${DOCKER_IMAGE_NOTIFICATIONS}; do
-                                echo "Scanning $image:latest..."
-                                docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \\
-                                    aquasec/trivy image \\
-                                    --format json \\
-                                    --output security-reports/trivy-$(basename $image).json \\
-                                    $image:latest || true
+                                echo "Scanning $image:${BUILD_NUMBER}..."
+                                docker run --rm \
+                                    -v /var/run/docker.sock:/var/run/docker.sock \
+                                    -v $(pwd)/security-reports:/security-reports \
+                                    aquasec/trivy image \
+                                    --format json \
+                                    --output /security-reports/trivy-$(basename $image).json \
+                                    $image:${BUILD_NUMBER} || echo "Trivy scan completed for $image with warnings"
                             done
                             
                             echo "Scanning for misconfigurations..."
-                            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \\
-                                aquasec/trivy config . \\
-                                --format json \\
-                                --output security-reports/trivy-config.json || true
+                            docker run --rm \
+                                -v /var/run/docker.sock:/var/run/docker.sock \
+                                -v $(pwd):/workspace \
+                                -v $(pwd)/security-reports:/security-reports \
+                                -w /workspace \
+                                aquasec/trivy config . \
+                                --format json \
+                                --output /security-reports/trivy-config.json || echo "Config scan completed with warnings"
                         '''
                     }
                 }
@@ -1193,19 +1230,25 @@ EOF
                         sh '''
                             echo "=== 🌐 Dynamic Application Security Testing ==="
                             
+                            # Ensure security-reports directory exists
+                            mkdir -p security-reports
+                            
                             echo "Starting application for DAST..."
                             docker-compose -f docker-compose.yml up -d
                             sleep 60
                             
                             echo "Running OWASP ZAP security scan..."
-                            docker run -t --network="host" owasp/zap2docker-stable \\
-                                zap-baseline.py -t http://localhost:3000 \\
-                                -J security-reports/zap-report.json || true
+                            docker run -t --network="host" \
+                                -v $(pwd)/security-reports:/zap/wrk \
+                                owasp/zap2docker-stable \
+                                zap-baseline.py -t http://localhost:3000 \
+                                -J /zap/wrk/zap-report.json || echo "ZAP scan completed with warnings"
                             
                             echo "Running Nikto web vulnerability scan..."
-                            docker run --rm --network="host" \\
-                                frapsoft/nikto -h http://localhost:3000 \\
-                                -output security-reports/nikto-report.txt || true
+                            docker run --rm --network="host" \
+                                -v $(pwd)/security-reports:/reports \
+                                frapsoft/nikto -h http://localhost:3000 \
+                                -output /reports/nikto-report.txt || echo "Nikto scan completed with warnings"
                             
                             echo "Cleaning up DAST environment..."
                             docker-compose -f docker-compose.yml down
@@ -1229,6 +1272,10 @@ EOF
                             
                             sh '''
                                 echo "Starting application for performance testing..."
+                                
+                                # Ensure performance-reports directory exists
+                                mkdir -p performance-reports
+                                
                                 docker-compose -f docker-compose.yml up -d
                                 
                                 echo "Waiting for all services to be ready..."
@@ -1341,6 +1388,9 @@ EOF
                         sh '''
                             echo "=== ⚛️ Frontend Performance Testing ==="
                             
+                            # Ensure performance-reports directory exists
+                            mkdir -p performance-reports
+                            
                             echo "Starting frontend for performance testing on port 3011..."
                             docker run -d -p 3011:3000 --name frontend-perf ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
                             
@@ -1408,6 +1458,9 @@ EOF
                     steps {
                         sh '''
                             echo "=== 🗃️ Database Performance Testing ==="
+                            
+                            # Ensure performance-reports directory exists
+                            mkdir -p performance-reports
                             
                             echo "Starting PostgreSQL for performance testing on port 5434..."
                             docker run -d --name postgres-perf \\
