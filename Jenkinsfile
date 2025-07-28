@@ -140,6 +140,7 @@ EOF
                                             
                                             echo "=== Checking requirements.txt ==="
                                             python3 -m pip install pipdeptree
+                                            mkdir -p ../build-artifacts
                                             pipdeptree --json > ../build-artifacts/backend-deps-tree.json
                                         '''
                                     }
@@ -152,6 +153,7 @@ EOF
                                             npm audit --json > ../security-reports/frontend-deps.json || true
                                             
                                             echo "=== Dependency Tree ==="
+                                            mkdir -p ../build-artifacts
                                             npm list --json > ../build-artifacts/frontend-deps-tree.json || true
                                         '''
                                     }
@@ -185,6 +187,7 @@ EOF
                             
                             echo "=== Backend Code Quality ==="
                             cd backend
+                            mkdir -p ../build-artifacts
                             flake8 app/ --max-line-length=88 --extend-ignore=E203,W503 --output-file=../build-artifacts/flake8-report.txt || true
                             black --check app/ || echo "Black formatting issues found"
                             isort --check-only app/ || echo "Import sorting issues found"
@@ -192,6 +195,7 @@ EOF
                             echo "=== Frontend Code Quality ==="
                             cd ../frontend
                             npm install
+                            mkdir -p ../build-artifacts
                             npx eslint src/ --format=json --output-file=../build-artifacts/eslint-report.json || true
                             npx prettier --check src/ || echo "Prettier formatting issues found"
                         '''
@@ -1223,6 +1227,7 @@ for t in threads:
                         echo "Aggregating test results..."
                         
                         # Create comprehensive test summary
+                        mkdir -p build-artifacts
                         cat > build-artifacts/test-summary.md << 'EOF'
 # Test Execution Summary
 
@@ -1481,6 +1486,7 @@ EOF
                 // Generate comprehensive report
                 sh """
                     echo "Generating comprehensive test report..."
+                    mkdir -p build-artifacts
                     cat > build-artifacts/pipeline-summary.html << 'EOF'
 <!DOCTYPE html>
 <html>
@@ -1535,6 +1541,7 @@ EOF
                     echo "🌐 Webhook: GitHub integration working via ngrok"
                     
                     # Create success summary
+                    mkdir -p build-artifacts
                     cat > build-artifacts/success-summary.txt << 'EOF'
 Pipeline Execution Summary
 ========================
