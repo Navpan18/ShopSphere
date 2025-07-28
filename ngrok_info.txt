@@ -1,0 +1,3 @@
+Jenkins Public URL: https://0bea8d10028d.ngrok-free.app
+GitHub Webhook URL: https://0bea8d10028d.ngrok-free.app/github-webhook/
+ngrok Web Interface: http://localhost:4040

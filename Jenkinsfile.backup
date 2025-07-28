@@ -2,8 +2,26 @@ pipeline {
     agent any
     
     environment {
+        // Basic configurations
+        APP_NAME = "shopsphere"
+        BUILD_NUMBER = "${env.BUILD_NUMBER}"
+        GIT_COMMIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
+        
+        // Test configurations
+        NODE_ENV = "test"
+        
+        // Database configurations for testing
+        POSTGRES_DB = "shopdb_test"
+        POSTGRES_USER = "testuser"
+        POSTGRES_PASSWORD = "testpass123"
+        
+        // Service URLs for testing
+        BACKEND_URL = "http://localhost:8001"
+        FRONTEND_URL = "http://localhost:3000"
+        ANALYTICS_URL = "http://localhost:8002"
+        NOTIFICATIONS_URL = "http://localhost:8003"
+        
         // Docker configurations
-        DOCKER_REGISTRY = "localhost:5000"
         DOCKER_IMAGE_BACKEND = "shopsphere-backend"
         DOCKER_IMAGE_FRONTEND = "shopsphere-frontend"
         DOCKER_IMAGE_ANALYTICS = "shopsphere-analytics"
@@ -22,16 +40,16 @@ pipeline {
         POSTGRES_DB = "shopdb_test"
         POSTGRES_USER = "testuser"
         POSTGRES_PASSWORD = "testpass123"
-        REDIS_URL = "redis://localhost:6380/1"
+        REDIS_URL = "redis://localhost:6379/1"
         
-        // Service URLs for testing (different ports to avoid conflicts)
-        BACKEND_URL = "http://localhost:8011"
-        FRONTEND_URL = "http://localhost:3010"
-        ANALYTICS_URL = "http://localhost:8012"
-        NOTIFICATIONS_URL = "http://localhost:8013"
+        // Service URLs for testing
+        BACKEND_URL = "http://localhost:8001"
+        FRONTEND_URL = "http://localhost:3000"
+        ANALYTICS_URL = "http://localhost:8002"
+        NOTIFICATIONS_URL = "http://localhost:8003"
         
-        // Kafka configurations (different port for testing)
-        KAFKA_BOOTSTRAP_SERVERS = "localhost:9093"
+        // Kafka configurations
+        KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
         
         // Deployment configurations
         COMPOSE_PROJECT_NAME = "shopsphere-test"
@@ -328,7 +346,7 @@ EOF
                     }
                     post {
                         always {
-                            junit allowEmptyResults: true, testResults: 'test-results/backend-junit.xml'
+                            junit 'test-results/backend-junit.xml'
                             publishHTML([
                                 allowMissing: false,
                                 alwaysLinkToLastBuild: true,
@@ -372,7 +390,7 @@ EOF
                     }
                     post {
                         always {
-                            junit allowEmptyResults: true, testResults: 'frontend/junit.xml'
+                            junit 'frontend/junit.xml'
                             publishHTML([
                                 allowMissing: false,
                                 alwaysLinkToLastBuild: true,
@@ -468,12 +486,12 @@ EOF
                     echo "=== 🗃️ Comprehensive Database Testing ==="
                     
                     sh '''
-                        echo "Starting PostgreSQL for testing on different port..."
+                        echo "Starting PostgreSQL for testing..."
                         docker run -d --name postgres-test \\
                             -e POSTGRES_DB=${POSTGRES_DB} \\
                             -e POSTGRES_USER=${POSTGRES_USER} \\
                             -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \\
-                            -p 5433:5432 \\
+                            -p 5432:5432 \\
                             postgres:14
                         
                         echo "Waiting for PostgreSQL to be ready..."
@@ -493,7 +511,7 @@ EOF
                         echo "Running database migrations..."
                         cd backend
                         source test_env/bin/activate
-                        export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5433/${POSTGRES_DB}"
+                        export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}"
                         
                         # Run Alembic migrations
                         alembic upgrade head
@@ -519,17 +537,10 @@ EOF
                     echo "=== 🔗 Comprehensive Integration Testing ==="
                     
                     sh '''
-                        echo "Starting complete test environment with different ports..."
+                        echo "Starting complete test environment..."
                         
-                        # Start infrastructure services on different ports
-                        docker run -d --name test-postgres \\
-                            -e POSTGRES_DB=${POSTGRES_DB} \\
-                            -e POSTGRES_USER=${POSTGRES_USER} \\
-                            -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \\
-                            -p 5433:5432 postgres:14
-                            
-                        docker run -d --name test-redis \\
-                            -p 6380:6379 redis:7-alpine
+                        # Start all services using docker-compose
+                        docker-compose -f docker-compose.yml up -d postgres redis zookeeper kafka
                         
                         echo "Waiting for infrastructure services to be ready..."
                         
@@ -538,20 +549,15 @@ EOF
                         chmod +x scripts/test-all-services.sh
                         
                         # Wait for PostgreSQL
-                        echo "Checking PostgreSQL readiness on port 5433..."
-                        for i in {1..30}; do
-                            if docker exec test-postgres pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}; then
-                                echo "✅ PostgreSQL is ready!"
-                                break
-                            fi
-                            echo "Waiting for PostgreSQL... attempt $i/30"
-                            sleep 2
-                        done
+                        echo "Checking PostgreSQL readiness..."
+                        scripts/service-health-check.sh "PostgreSQL" "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}" 30 2 || {
+                            docker exec shopsphere_postgres pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+                        }
                         
                         # Wait for Redis
-                        echo "Checking Redis readiness on port 6380..."
+                        echo "Checking Redis readiness..."
                         for i in {1..30}; do
-                            if docker exec test-redis redis-cli ping | grep -q PONG; then
+                            if docker exec shopsphere_redis redis-cli ping | grep -q PONG; then
                                 echo "✅ Redis is ready!"
                                 break
                             fi
@@ -559,92 +565,60 @@ EOF
                             sleep 2
                         done
                         
-                        # Start application services with test images on different ports
-                        echo "Starting application services on test ports..."
-                        docker run -d --name test-backend \\
-                            -p 8011:8001 \\
-                            -e DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:5433/${POSTGRES_DB}" \\
-                            -e REDIS_URL="redis://host.docker.internal:6380/1" \\
-                            ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
-                            
-                        docker run -d --name test-frontend \\
-                            -p 3010:3000 \\
-                            -e NEXT_PUBLIC_API_URL=http://localhost:8011 \\
-                            ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
-                            
-                        docker run -d --name test-analytics \\
-                            -p 8012:8002 \\
-                            ${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER}
-                            
-                        docker run -d --name test-notifications \\
-                            -p 8013:8003 \\
-                            ${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER}
-                        
-                        # Wait for all services to be healthy on test ports
-                        echo "Performing health checks on test ports..."
-                        
-                        # Test backend health
-                        echo "Testing backend on port 8011..."
-                        for i in {1..60}; do
-                            if curl -f ${BACKEND_URL}/health >/dev/null 2>&1; then
-                                echo "✅ Backend is ready!"
+                        # Wait for Kafka
+                        echo "Checking Kafka readiness..."
+                        for i in {1..30}; do
+                            if docker exec shopsphere_kafka kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; then
+                                echo "✅ Kafka is ready!"
                                 break
                             fi
-                            echo "Waiting for backend... attempt $i/60"
+                            echo "Waiting for Kafka... attempt $i/30"
                             sleep 2
                         done
                         
-                        # Test frontend
-                        echo "Testing frontend on port 3010..."
-                        for i in {1..60}; do
-                            if curl -f ${FRONTEND_URL} >/dev/null 2>&1; then
-                                echo "✅ Frontend is ready!"
-                                break
-                            fi
-                            echo "Waiting for frontend... attempt $i/60"
-                            sleep 2
-                        done
+                        # Start application services using docker-compose with our built images
+                        echo "Starting application services..."
+                        docker-compose -f docker-compose.yml up -d backend frontend analytics notifications
                         
-                        # Test analytics service
-                        echo "Testing analytics on port 8012..."
-                        for i in {1..60}; do
-                            if curl -f ${ANALYTICS_URL}/health >/dev/null 2>&1; then
-                                echo "✅ Analytics is ready!"
-                                break
-                            fi
-                            echo "Waiting for analytics... attempt $i/60"
-                            sleep 2
-                        done
+                        # Wait for all services to be healthy
+                        echo "Performing comprehensive health checks..."
                         
-                        # Test notifications service
-                        echo "Testing notifications on port 8013..."
-                        for i in {1..60}; do
-                            if curl -f ${NOTIFICATIONS_URL}/health >/dev/null 2>&1; then
-                                echo "✅ Notifications is ready!"
-                                break
-                            fi
-                            echo "Waiting for notifications... attempt $i/60"
-                            sleep 2
-                        done
+                        # Use our health check script for all services
+                        scripts/service-health-check.sh "Backend API" "$BACKEND_URL/health" 60 2
+                        scripts/service-health-check.sh "Frontend" "$FRONTEND_URL" 60 2
+                        scripts/service-health-check.sh "Analytics Service" "$ANALYTICS_URL/health" 60 2
+                        scripts/service-health-check.sh "Notifications Service" "$NOTIFICATIONS_URL/health" 60 2
                         
-                        echo "Running basic API tests..."
-                        curl -f ${BACKEND_URL}/health || echo "Backend health check failed"
-                        curl -f ${ANALYTICS_URL}/health || echo "Analytics health check failed"  
-                        curl -f ${NOTIFICATIONS_URL}/health || echo "Notifications health check failed"
+                        echo "Running comprehensive service tests..."
+                        scripts/test-all-services.sh > integration-reports/comprehensive-service-tests.log 2>&1 || true
                         
-                        echo "Testing service communication..."
-                        # Test basic service endpoints
-                        curl -X POST ${ANALYTICS_URL}/api/events \\
+                        echo "Running API integration tests..."
+                        chmod +x test-endpoints.sh
+                        ./test-endpoints.sh > integration-reports/api-tests.log 2>&1 || true
+                        
+                        echo "Testing Kafka event flow..."
+                        chmod +x test-kafka-events.sh
+                        ./test-kafka-events.sh > integration-reports/kafka-tests.log 2>&1 || true
+                        
+                        echo "Testing service-to-service communication..."
+                        # Test backend to analytics communication
+                        curl -X POST http://localhost:8001/api/analytics/event \\
                             -H "Content-Type: application/json" \\
-                            -d '{"event_type": "test", "data": {}}' || echo "Analytics test failed"
+                            -d '{"event_type": "test", "data": {}}' || true
                         
-                        curl -X POST ${NOTIFICATIONS_URL}/api/notifications \\
+                        # Test backend to notifications communication
+                        curl -X POST http://localhost:8001/api/notifications/send \\
                             -H "Content-Type: application/json" \\
-                            -d '{"type": "test", "message": "Integration test"}' || echo "Notifications test failed"
+                            -d '{"type": "test", "message": "Integration test"}' || true
                         
-                        echo "Cleaning up test environment..."
-                        docker stop test-backend test-frontend test-analytics test-notifications test-postgres test-redis || true
-                        docker rm test-backend test-frontend test-analytics test-notifications test-postgres test-redis || true
+                        echo "Running cross-service integration tests..."
+                        cd backend
+                        source test_env/bin/activate
+                        python -m pytest tests/ -k "integration" \\
+                            --junit-xml=../test-results/integration-junit.xml || true
+                        
+                        echo "Cleaning up integration test environment..."
+                        docker-compose -f docker-compose.yml down
                     '''
                 }
             }
@@ -735,35 +709,39 @@ EOF
 import { test, expect } from '@playwright/test';
 
 test('homepage loads correctly', async ({ page }) => {
-  await page.goto('http://localhost:3010');
+  await page.goto('http://localhost:3000');
   await expect(page).toHaveTitle(/ShopSphere/);
 });
 
 test('backend api health check', async ({ page }) => {
-  const response = await page.request.get('http://localhost:8011/health');
+  const response = await page.request.get('http://localhost:8001/health');
   expect(response.ok()).toBeTruthy();
 });
 
 test('analytics service health check', async ({ page }) => {
-  const response = await page.request.get('http://localhost:8012/health');
+  const response = await page.request.get('http://localhost:8002/health');
   expect(response.ok()).toBeTruthy();
 });
 
 test('notifications service health check', async ({ page }) => {
-  const response = await page.request.get('http://localhost:8013/health');
+  const response = await page.request.get('http://localhost:8003/health');
   expect(response.ok()).toBeTruthy();
 });
 
-test('basic service connectivity', async ({ page }) => {
-  // Test main application flow
-  await page.goto('http://localhost:3010');
+test('complete user journey', async ({ page }) => {
+  // Test complete user flow across all services
+  await page.goto('http://localhost:3000');
   
-  // Test if frontend can communicate with backend
-  const healthResponse = await page.request.get('http://localhost:8011/health');
-  expect(healthResponse.ok()).toBeTruthy();
+  // Test navigation
+  await page.click('[data-testid="products-link"]');
+  await expect(page).toHaveURL(/.*products/);
   
-  // Test analytics service
-  const analyticsResponse = await page.request.get('http://localhost:8012/health');
+  // Test search functionality
+  await page.fill('[data-testid="search-input"]', 'test product');
+  await page.click('[data-testid="search-button"]');
+  
+  // Verify analytics tracking
+  const analyticsResponse = await page.request.get('http://localhost:8002/api/events');
   expect(analyticsResponse.ok()).toBeTruthy();
 });
 EOF
@@ -779,7 +757,7 @@ EOF
                             -d '{"test": "e2e-integration"}' || true
                         
                         echo "Running accessibility tests..."
-                        npx @axe-core/cli http://localhost:3010 \\
+                        npx @axe-core/cli http://localhost:3000 \\
                             --save ../test-results/accessibility-report.json || true
                         
                         echo "Running cross-browser tests..."
@@ -1021,12 +999,12 @@ EOF
                         sh '''
                             echo "=== ⚛️ Frontend Performance Testing ==="
                             
-                            echo "Starting frontend for performance testing on port 3011..."
-                            docker run -d -p 3011:3000 --name frontend-perf ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
+                            echo "Starting frontend for performance testing..."
+                            docker run -d -p 3000:3000 --name frontend-perf ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
                             
                             echo "Waiting for frontend to be ready..."
                             for i in {1..60}; do
-                                if curl -f http://localhost:3011 >/dev/null 2>&1; then
+                                if curl -f http://localhost:3000 >/dev/null 2>&1; then
                                     echo "Frontend is ready!"
                                     break
                                 fi
@@ -1038,7 +1016,7 @@ EOF
                             npm install -g @lhci/cli lighthouse
                             
                             echo "Running Lighthouse performance audit..."
-                            lighthouse http://localhost:3011 \\
+                            lighthouse http://localhost:3000 \\
                                 --output=json \\
                                 --output-path=performance-reports/lighthouse-report.json \\
                                 --chrome-flags="--headless --no-sandbox" || true
@@ -1066,7 +1044,7 @@ export let options = {
 };
 
 export default function () {
-  let response = http.get('http://localhost:3011');
+  let response = http.get('http://localhost:3000');
   check(response, {
     'frontend status is 200': (r) => r.status === 200,
     'frontend loads in < 2s': (r) => r.timings.duration < 2000,
@@ -1089,12 +1067,12 @@ EOF
                         sh '''
                             echo "=== 🗃️ Database Performance Testing ==="
                             
-                            echo "Starting PostgreSQL for performance testing on port 5434..."
+                            echo "Starting PostgreSQL for performance testing..."
                             docker run -d --name postgres-perf \\
                                 -e POSTGRES_DB=${POSTGRES_DB} \\
                                 -e POSTGRES_USER=${POSTGRES_USER} \\
                                 -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \\
-                                -p 5434:5432 \\
+                                -p 5432:5432 \\
                                 postgres:14
                             
                             echo "Waiting for PostgreSQL to be ready..."
@@ -1357,30 +1335,30 @@ ENVIRONMENT=$1
 echo "Running smoke tests for $ENVIRONMENT environment..."
 
 # Test all service health endpoints
-echo "Testing backend health on staging port 8021..."
-curl -f http://localhost:8021/health || exit 1
+echo "Testing backend health..."
+curl -f http://localhost:8001/health || exit 1
 
-echo "Testing frontend availability on staging port 3020..."
-curl -f http://localhost:3020 || exit 1
+echo "Testing frontend availability..."
+curl -f http://localhost:3000 || exit 1
 
-echo "Testing analytics service on staging port 8022..."
-curl -f http://localhost:8022/health || exit 1
+echo "Testing analytics service..."
+curl -f http://localhost:8002/health || exit 1
 
-echo "Testing notifications service on staging port 8023..."
-curl -f http://localhost:8023/health || exit 1
+echo "Testing notifications service..."
+curl -f http://localhost:8003/health || exit 1
 
-# Test basic API functionality on staging ports
-echo "Testing basic API endpoints on staging..."
-curl -f http://localhost:8021/api/products || exit 1
+# Test basic API functionality
+echo "Testing basic API endpoints..."
+curl -f http://localhost:8001/api/products || exit 1
 
-echo "Testing service communication on staging..."
-# Test analytics service
-curl -X POST http://localhost:8022/api/events \\
+echo "Testing service communication..."
+# Test that analytics can receive events
+curl -X POST http://localhost:8002/api/events \\
   -H "Content-Type: application/json" \\
   -d '{"event_type": "smoke_test", "data": {}}' || exit 1
 
-# Test notifications service  
-curl -X POST http://localhost:8023/api/notifications \\
+# Test that notifications can be sent
+curl -X POST http://localhost:8003/api/notifications \\
   -H "Content-Type: application/json" \\
   -d '{"type": "smoke_test", "message": "Test notification"}' || exit 1
 
@@ -1395,10 +1373,10 @@ EOF
                         # Add monitoring setup here
                         echo "Staging deployment completed successfully"
                         echo "Services available at:"
-                        echo "  Frontend: http://localhost:3020"
-                        echo "  Backend API: http://localhost:8021"
-                        echo "  Analytics: http://localhost:8022"
-                        echo "  Notifications: http://localhost:8023"
+                        echo "  Frontend: http://localhost:3000"
+                        echo "  Backend API: http://localhost:8001"
+                        echo "  Analytics: http://localhost:8002"
+                        echo "  Notifications: http://localhost:8003"
                     '''
                 }
             }
@@ -1467,8 +1445,8 @@ EOF
                     integration-reports/**/*
                 ''', allowEmptyArchive: true
                 
-                // Publish all test results (allow missing files)
-                junit allowEmptyResults: true, testResults: 'test-results/*-junit.xml'
+                // Publish all test results
+                junit 'test-results/*-junit.xml'
                 
                 // Clean up Docker resources
                 sh '''
