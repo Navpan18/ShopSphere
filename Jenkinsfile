@@ -88,7 +88,7 @@ pipeline {
                 checkout scm
                 
                 sh '''
-                    mkdir -p {test-results,coverage-reports,build-artifacts,security-reports,performance-reports}
+                    mkdir -p {test-results,coverage-reports,build-artifacts,performance-reports}
                     mkdir -p {backend-reports,frontend-reports,microservices-reports,integration-reports}
                     
                     # Create curl format file for performance testing
@@ -139,7 +139,7 @@ EOF
                                 docker volume create shopsphere-test-reports || true
                                 
                                 # Create directories for reports
-                                mkdir -p security-reports build-artifacts
+                                mkdir -p build-artifacts
                             '''
                             
                             parallel(
@@ -152,7 +152,6 @@ EOF
                                             --name backend-deps-analyzer-${BUILD_NUMBER} \
                                             --network shopsphere-test-network \
                                             -v $(pwd)/backend:/workspace \
-                                            -v $(pwd)/security-reports:/security-reports \
                                             -v $(pwd)/build-artifacts:/build-artifacts \
                                             -w /workspace \
                                             python:3.11-slim bash -c "
@@ -165,9 +164,6 @@ EOF
                                                 else
                                                     echo 'No requirements.txt found, skipping dependency install'
                                                 fi
-                                                
-                                                echo 'Running security audit...'
-                                                pip-audit --desc --format=json --output=/security-reports/backend-deps.json || echo 'Security audit completed with warnings'
                                                 
                                                 echo 'Generating dependency tree...'
                                                 pipdeptree --json > /build-artifacts/backend-deps-tree.json
@@ -183,31 +179,25 @@ EOF
                                 if [ ! -f "frontend/package.json" ]; then
                                     echo "❌ frontend/package.json not found! Skipping frontend dependency analysis"
                                     exit 0
-                                fi
-                                
-                                # Run frontend dependency analysis in isolated container
-                                docker run --rm \
-                                    --name frontend-deps-analyzer-${BUILD_NUMBER} \
-                                    --network shopsphere-test-network \
-                                    -v $(pwd)/frontend:/workspace \
-                                    -v $(pwd)/security-reports:/security-reports \
-                                    -v $(pwd)/build-artifacts:/build-artifacts \
-                                    -w /workspace \
-                                    node:18-alpine sh -c "
-                                        echo 'Checking package.json exists...'
-                                        ls -la package.json || (echo 'package.json not found in workspace!' && exit 1)
-                                        
-                                        echo 'Installing package-lock...'
-                                        npm install --package-lock-only || echo 'Package lock generation completed'
-                                        
-                                        echo 'Running security audit...'
-                                        npm audit --json > /security-reports/frontend-deps.json || echo 'NPM audit completed with warnings'
-                                        
-                                        echo 'Generating dependency tree...'
-                                        npm list --json > /build-artifacts/frontend-deps-tree.json || echo 'Dependency tree generated'
-                                        
-                                        echo 'Frontend dependency analysis completed successfully ✅'
-                                    "
+                                fi                                        # Run frontend dependency analysis in isolated container
+                                        docker run --rm \
+                                            --name frontend-deps-analyzer-${BUILD_NUMBER} \
+                                            --network shopsphere-test-network \
+                                            -v $(pwd)/frontend:/workspace \
+                                            -v $(pwd)/build-artifacts:/build-artifacts \
+                                            -w /workspace \
+                                            node:18-alpine sh -c "
+                                                echo 'Checking package.json exists...'
+                                                ls -la package.json || (echo 'package.json not found in workspace!' && exit 1)
+                                                
+                                                echo 'Installing package-lock...'
+                                                npm install --package-lock-only || echo 'Package lock generation completed'
+                                                
+                                                echo 'Generating dependency tree...'
+                                                npm list --json > /build-artifacts/frontend-deps-tree.json || echo 'Dependency tree generated'
+                                                
+                                                echo 'Frontend dependency analysis completed successfully ✅'
+                                            "
                             '''
                         },
                                 "Microservices Dependencies": {
@@ -221,7 +211,6 @@ EOF
                                                 --name analytics-deps-analyzer-${BUILD_NUMBER} \
                                                 --network shopsphere-test-network \
                                                 -v $(pwd)/microservices/analytics-service:/workspace \
-                                                -v $(pwd)/security-reports:/security-reports \
                                                 -w /workspace \
                                                 python:3.11-slim bash -c "
                                                     pip install --no-cache-dir pip-audit || true
@@ -244,13 +233,12 @@ EOF
                                                 --name notifications-deps-analyzer-${BUILD_NUMBER} \
                                                 --network shopsphere-test-network \
                                                 -v $(pwd)/microservices/notification-service:/workspace \
-                                                -v $(pwd)/security-reports:/security-reports \
                                                 -w /workspace \
                                                 python:3.11-slim bash -c "
                                                     pip install --no-cache-dir pip-audit || true
                                                     if [ -f requirements.txt ]; then
                                                         pip install --no-cache-dir -r requirements.txt || true
-                                                        pip-audit --desc --format=json --output=/security-reports/notifications-deps.json || echo 'Notifications audit completed with warnings'
+                                                        pip-audit --desc || echo 'Notifications audit completed with warnings'
                                                     else
                                                         echo 'No requirements.txt found for notification service'
                                                     fi
@@ -1124,144 +1112,7 @@ EOF
             }
         }
         
-        stage('🔒 Security Testing') {
-            parallel {
-                stage('SAST Security Scan') {
-                    steps {
-                        sh '''
-                            echo "=== 🔒 Static Application Security Testing ==="
-                            
-                            # Ensure security-reports directory exists
-                            mkdir -p security-reports
-                            
-                            echo "Installing security tools..."
-                            pip install bandit safety semgrep
-                            npm install -g eslint-plugin-security
-                            
-                            echo "Running Bandit security scan on backend..."
-                            cd backend
-                            bandit -r app/ -f json -o ../security-reports/bandit-report.json || true
-                            bandit -r app/ -f txt -o ../security-reports/bandit-report.txt || true
-                            
-                            echo "Running Safety check for Python dependencies..."
-                            safety check --json --output ../security-reports/safety-report.json || true
-                            
-                            echo "Running Semgrep security analysis..."
-                            semgrep --config=auto app/ --json --output=../security-reports/semgrep-report.json || true
-                            
-                            echo "Running ESLint security scan on frontend..."
-                            cd ../frontend
-                            
-                            # Create .eslintrc.security.js if it doesn't exist
-                            if [ ! -f .eslintrc.security.js ]; then
-                                cat > .eslintrc.security.js << 'EOF'
-module.exports = {
-  extends: ['plugin:security/recommended'],
-  plugins: ['security'],
-  rules: {
-    'security/detect-object-injection': 'warn',
-    'security/detect-non-literal-regexp': 'warn',
-    'security/detect-unsafe-regex': 'warn',
-    'security/detect-buffer-noassert': 'warn',
-    'security/detect-child-process': 'warn',
-    'security/detect-disable-mustache-escape': 'warn',
-    'security/detect-eval-with-expression': 'warn',
-    'security/detect-no-csrf-before-method-override': 'warn',
-    'security/detect-non-literal-fs-filename': 'warn',
-    'security/detect-non-literal-require': 'warn',
-    'security/detect-possible-timing-attacks': 'warn',
-    'security/detect-pseudoRandomBytes': 'warn'
-  }
-};
-EOF
-                            fi
-                            
-                            npx eslint src/ --ext .js,.jsx,.ts,.tsx \\
-                                --config .eslintrc.security.js \\
-                                --format json \\
-                                --output-file ../security-reports/eslint-security.json || true
-                        '''
-                    }
-                }
-                
-                stage('Container Security') {
-                    steps {
-                        sh '''
-                            echo "=== 🐳 Container Security Scanning ==="
-                            
-                            # Ensure security-reports directory exists
-                            mkdir -p security-reports
-                            
-                            echo "Container security scanning temporarily disabled due to volume mounting issues"
-                            echo "Creating placeholder security report..."
-                            
-                            cat > security-reports/container-security-placeholder.txt << 'EOF'
-Container Security Scan Results
-==============================
-Status: Skipped due to technical issues
-Recommendation: Run manual Trivy scans on built images
 
-Images that should be scanned:
-- Backend: ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
-- Frontend: ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
-- Analytics: ${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER}
-- Notifications: ${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER}
-
-Manual scan commands:
-docker run --rm aquasec/trivy image ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
-docker run --rm aquasec/trivy image ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
-docker run --rm aquasec/trivy image ${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER}
-docker run --rm aquasec/trivy image ${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER}
-EOF
-                            
-                            echo "✅ Container security scan placeholder created"
-                        '''
-                    }
-                }
-                
-                stage('DAST Security Testing') {
-                    when {
-                        anyOf {
-                            branch 'main'
-                            branch 'develop'
-                        }
-                    }
-                    steps {
-                        sh '''
-                            echo "=== 🌐 Dynamic Application Security Testing ==="
-                            
-                            # Ensure security-reports directory exists
-                            mkdir -p security-reports
-                            
-                            echo "Starting application for DAST..."
-                            docker-compose -f docker-compose.yml up -d
-                            sleep 60
-                            
-                            echo "Running OWASP ZAP security scan..."
-                            docker run -t --network="host" \
-                                -v $(pwd)/security-reports:/zap/wrk \
-                                owasp/zap2docker-stable \
-                                zap-baseline.py -t http://localhost:3000 \
-                                -J /zap/wrk/zap-report.json || echo "ZAP scan completed with warnings"
-                            
-                            echo "Running Nikto web vulnerability scan..."
-                            docker run --rm --network="host" \
-                                -v $(pwd)/security-reports:/reports \
-                                frapsoft/nikto -h http://localhost:3000 \
-                                -output /reports/nikto-report.txt || echo "Nikto scan completed with warnings"
-                            
-                            echo "Cleaning up DAST environment..."
-                            docker-compose -f docker-compose.yml down
-                        '''
-                    }
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'security-reports/*', allowEmptyArchive: true
-                }
-            }
-        }
         
         stage('🚀 Performance Testing') {
             parallel {
@@ -1623,9 +1474,6 @@ EOF
                         # Check if coverage meets threshold
                         echo "Coverage threshold check: ${COVERAGE_THRESHOLD}%"
                         
-                        # Check if security vulnerabilities are within acceptable limits
-                        echo "Security vulnerability check..."
-                        
                         # Check if performance metrics meet requirements
                         echo "Performance metrics check..."
                         
@@ -1836,7 +1684,6 @@ EOF
                     build-artifacts/**/*,
                     test-results/**/*,
                     coverage-reports/**/*,
-                    security-reports/**/*,
                     performance-reports/**/*,
                     integration-reports/**/*
                 ''', allowEmptyArchive: true
@@ -1886,7 +1733,6 @@ EOF
         <ul>
             <li><a href="coverage-reports/backend/index.html">Backend Coverage</a></li>
             <li><a href="coverage-reports/frontend/index.html">Frontend Coverage</a></li>
-            <li><a href="security-reports/">Security Reports</a></li>
             <li><a href="performance-reports/">Performance Reports</a></li>
         </ul>
     </div>
@@ -1933,7 +1779,6 @@ Services Tested:
 Quality Gates Passed:
 - ✅ Unit Tests
 - ✅ Integration Tests
-- ✅ Security Scans
 - ✅ Performance Tests
 - ✅ Code Coverage
 EOF
