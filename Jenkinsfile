@@ -324,11 +324,11 @@ EOF
                         fi
                         
                         docker run --rm \\
-                                --name frontend-quality-check-${BUILD_NUMBER} \
-                                --network shopsphere-test-network \
-                                -v $(pwd)/frontend:/workspace \
-                                -v $(pwd)/build-artifacts:/build-artifacts \
-                                -w /workspace \
+                                --name frontend-quality-check-${BUILD_NUMBER} \\
+                                --network shopsphere-test-network \\
+                                -v $(pwd)/frontend:/workspace \\
+                                -v $(pwd)/build-artifacts:/build-artifacts \\
+                                -w /workspace \\
                                 node:18-alpine sh -c "
                                     echo 'Checking package.json exists...'
                                     ls -la package.json || echo 'package.json not found in workspace!'
