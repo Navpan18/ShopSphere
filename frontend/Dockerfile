@@ -4,13 +4,13 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install dependencies for faster builds
-RUN apk add --no-cache git
+RUN apk add --no-cache git curl
 
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies with optimizations
-RUN npm ci --only=production --silent --no-audit --no-fund \
+RUN npm ci --silent --no-audit --no-fund \
     && npm cache clean --force
 
 # Copy source code
