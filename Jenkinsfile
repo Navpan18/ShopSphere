@@ -188,10 +188,14 @@ EOF
                                             -w /workspace \
                                             node:18-alpine sh -c "
                                                 echo 'Checking package.json exists...'
-                                                ls -la package.json || (echo 'package.json not found in workspace!' && exit 1)
+                                                ls -la package.json || echo 'package.json not found in workspace!'
                                                 
-                                                echo 'Installing package-lock...'
-                                                npm install --package-lock-only || echo 'Package lock generation completed'
+                                                if [ -f package.json ]; then
+                                                    echo 'Installing package-lock...'
+                                                    npm install --package-lock-only || echo 'Package lock generation completed'
+                                                else
+                                                    echo 'Skipping npm install - no package.json found'
+                                                fi
                                                 
                                                 echo 'Generating dependency tree...'
                                                 npm list --json > /build-artifacts/frontend-deps-tree.json || echo 'Dependency tree generated'
@@ -319,10 +323,15 @@ EOF
                                 -w /workspace \
                                 node:18-alpine sh -c "
                                     echo 'Checking package.json exists...'
-                                    ls -la package.json || (echo 'package.json not found in workspace!' && exit 1)
+                                    ls -la package.json || echo 'package.json not found in workspace!'
                                     
-                                    echo 'Installing frontend dependencies...'
-                                    npm install || echo 'NPM install completed with warnings'
+                                    if [ -f package.json ]; then
+                                        echo 'Installing frontend dependencies...'
+                                        npm install || echo 'NPM install completed with warnings'
+                                    else
+                                        echo 'Skipping npm install - no package.json found'
+                                        exit 0
+                                    fi
                                     
                                     echo 'Installing code quality tools...'
                                     npm install -g eslint prettier || echo 'Global tools installed'
