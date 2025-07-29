@@ -345,11 +345,11 @@ EOF
 import pytest
 
 def test_basic_functionality():
-    '''Basic test to ensure container is working'''
+    'Basic test to ensure container is working'
     assert True
 
 def test_imports():
-    '''Test that we can import main modules'''
+    'Test that we can import main modules'
     try:
         import uvicorn
         import fastapi
@@ -358,7 +358,7 @@ def test_imports():
         pytest.fail(f'Import failed: {e}')
 
 def test_environment():
-    '''Test environment setup'''
+    'Test environment setup'
     import os
     import sys
     assert sys.version_info >= (3, 8)

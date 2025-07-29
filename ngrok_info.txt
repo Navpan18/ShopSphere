@@ -1,3 +1,13 @@
-Jenkins Public URL: https://0bea8d10028d.ngrok-free.app
-GitHub Webhook URL: https://0bea8d10028d.ngrok-free.app/github-webhook/
+Jenkins Public URL: https://3ac72a83cb71.ngrok-free.app
+GitHub Webhook URL: https://3ac72a83cb71.ngrok-free.app/github-webhook/
 ngrok Web Interface: http://localhost:4040
+Jenkins Local URL: http://localhost:9040
+
+GitHub Webhook Setup:
+1. Go to your GitHub repository settings
+2. Navigate to Webhooks → Add webhook
+3. Payload URL: https://3ac72a83cb71.ngrok-free.app/github-webhook/
+4. Content type: application/json
+5. Select 'Just the push event'
+6. Set Active: ✅
+7. Click 'Add webhook'

@@ -7,12 +7,15 @@ This document explains the startup sequence and timing for all ShopSphere servic
 The `start-services.sh` script starts services in the following order with appropriate wait times:
 
 ### Step 1: Infrastructure Services (~15 seconds)
+
 - **PostgreSQL** - Database server
+
   - Startup time: ~10 seconds
   - Health check: `pg_isready` command
   - Port: 5432
 
 - **Redis** - Cache and session store
+
   - Startup time: ~5 seconds
   - Health check: `PING` command
   - Port: 6379
@@ -23,7 +26,9 @@ The `start-services.sh` script starts services in the following order with appro
   - Ports: 2181 (Zookeeper), 9092 (Kafka)
 
 ### Step 2: Jenkins CI/CD & ngrok (~60-90 seconds)
+
 - **Jenkins** - Continuous Integration/Deployment
+
   - Startup time: 60-90 seconds (longest startup)
   - Health check: HTTP status on port 9040
   - Includes plugin installation and initialization
@@ -36,12 +41,15 @@ The `start-services.sh` script starts services in the following order with appro
   - Web interface: http://localhost:4040
 
 ### Step 3: Application Services (~25 seconds)
+
 - **Backend API** - Main application backend
+
   - Startup time: ~25 seconds
   - Health check: `/health` endpoint
   - Port: 8001
 
 - **Analytics Service** - Data analytics microservice
+
   - Startup time: ~20 seconds
   - Health check: `/health` endpoint
   - Port: 8002
@@ -52,6 +60,7 @@ The `start-services.sh` script starts services in the following order with appro
   - Port: 8003
 
 ### Step 4: Frontend (~20-30 seconds)
+
 - **Frontend** - React/Next.js application
   - Startup time: 20-30 seconds
   - Health check: HTTP status on port 3000
@@ -59,11 +68,14 @@ The `start-services.sh` script starts services in the following order with appro
   - Port: 3000
 
 ### Step 5: Monitoring Services (~15 seconds)
+
 - **Prometheus** - Metrics collection
+
   - Startup time: ~10 seconds
   - Port: 9090
 
 - **Grafana** - Metrics visualization
+
   - Startup time: ~15 seconds
   - Default login: admin/admin
   - Port: 3001
@@ -94,26 +106,31 @@ Each service uses appropriate health check methods:
 ## 🛠️ Usage Commands
 
 ### Start All Services
+
 ```bash
 ./start-services.sh
 ```
 
 ### Quick Health Check
+
 ```bash
 ./quick-health-check.sh
 ```
 
 ### Stop All Services
+
 ```bash
 ./stop-services.sh
 ```
 
 ### Comprehensive Testing
+
 ```bash
 ./scripts/test-all-services.sh
 ```
 
 ### ngrok Management
+
 ```bash
 # Start ngrok tunnel for Jenkins
 ./start-ngrok.sh
@@ -128,6 +145,7 @@ pkill -f ngrok
 ## 🔧 Troubleshooting
 
 ### Service Names Reference
+
 - **Service names (docker-compose)**: postgres, redis, backend, frontend, analytics, notifications, jenkins
 - **Container names (docker exec)**: shopsphere_postgres, shopsphere_redis, shopsphere_backend, etc.
 - **Network name**: shopsphere-network
@@ -136,32 +154,36 @@ pkill -f ngrok
 ### If Services Fail to Start
 
 1. **Check Docker Resources**
+
    ```bash
    docker system df
    docker system prune -f  # Clean up if needed
    ```
 
 2. **View Service Logs**
+
    ```bash
    docker-compose logs [service-name]
    docker-compose logs -f [service-name]  # Follow logs
    ```
 
 3. **Manual Health Checks**
+
    ```bash
    # Check PostgreSQL directly
    docker exec shopsphere_postgres pg_isready -U user -d shopdb
-   
-   # Check Redis directly  
+
+   # Check Redis directly
    docker exec shopsphere_redis redis-cli ping
    ```
 
 4. **Restart Individual Service**
+
    ```bash
    docker-compose restart [service-name]
    ```
 
-4. **Manual Service Start**
+5. **Manual Service Start**
    ```bash
    docker-compose up -d [service-name]
    ```
@@ -202,11 +224,13 @@ DevOps Layer:
 - Webhook URL format: `https://your-ngrok-url.ngrok.io/github-webhook/`
 
 ### Automatic Setup
+
 1. Run `./start-services.sh` - ngrok starts automatically
 2. Copy the displayed webhook URL
 3. Add it to your GitHub repository webhook settings
 
 ### Manual ngrok Control
+
 - Start only ngrok: `./start-ngrok.sh`
 - Check ngrok status: `./check-ngrok.sh`
 - Stop ngrok: `pkill -f ngrok`
