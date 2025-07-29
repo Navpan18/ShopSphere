@@ -6,14 +6,18 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+# Install dependencies with timeout and optimization
+RUN npm ci --only=production --silent --no-audit --no-fund || \
+    npm install --silent --no-audit --no-fund --production
 
 # Copy source code
 COPY . .
 
+# Build the application
+RUN npm run build
+
 # Expose port
 EXPOSE 3000
 
-# Run in development mode
-CMD ["npm", "run", "dev"]
+# Run in production mode
+CMD ["npm", "start"]

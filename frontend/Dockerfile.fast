@@ -1,0 +1,23 @@
+# Fast optimized Dockerfile for frontend
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Quick install with minimal options to avoid hanging
+RUN npm install --no-optional --no-audit --no-fund --silent --timeout=60000 --legacy-peer-deps || \
+    npm ci --silent --no-audit --no-fund
+
+# Copy source code
+COPY . .
+
+# Build the application quickly
+RUN npm run build
+
+# Expose port
+EXPOSE 3000
+
+# Run in production mode
+CMD ["npm", "start"]
