@@ -171,8 +171,9 @@ EOF
                                                 echo 'Backend dependency analysis completed successfully ✅'
                                             "
                                     '''
-                                },                        "Frontend Dependencies": {
-                            sh '''
+                                },
+                                "Frontend Dependencies": {
+                                    sh '''
                                 echo "=== 📦 Frontend Dependencies Analysis in Docker Container ==="
                                 
                                 # Check if frontend directory and package.json exist first
@@ -180,13 +181,15 @@ EOF
                                     echo "❌ frontend/package.json not found! Creating minimal setup for analysis"
                                     mkdir -p frontend
                                     echo '{"name": "frontend", "version": "1.0.0", "dependencies": {}}' > frontend/package.json
-                                fi                                        # Run frontend dependency analysis in isolated container
-                                        docker run --rm \
-                                            --name frontend-deps-analyzer-${BUILD_NUMBER} \
-                                            --network shopsphere-test-network \
-                                            -v $(pwd)/frontend:/workspace \
-                                            -v $(pwd)/build-artifacts:/build-artifacts \
-                                            -w /workspace \
+                                fi
+                                
+                                # Run frontend dependency analysis in isolated container
+                                docker run --rm \\
+                                            --name frontend-deps-analyzer-${BUILD_NUMBER} \\
+                                            --network shopsphere-test-network \\
+                                            -v $(pwd)/frontend:/workspace \\
+                                            -v $(pwd)/build-artifacts:/build-artifacts \\
+                                            -w /workspace \\
                                             node:18-alpine sh -c "
                                                 echo 'Checking package.json exists...'
                                                 ls -la package.json || echo 'package.json not found in workspace!'
@@ -399,14 +402,8 @@ EOF
                                     echo "Working directory: $(pwd)"
                                     echo "Package.json exists: $(ls -la package.json)"
                                     
-                                    # Use timeout to prevent hanging with aggressive npm settings
-                                    timeout 120 npm ci --silent --no-audit --no-fund || {
-                                        echo "npm ci failed or timed out, trying npm install with aggressive settings..."
-                                        timeout 120 npm install --no-optional --no-audit --no-fund --legacy-peer-deps || {
-                                            echo "npm install also failed, creating minimal build"
-                                            npm install --production --no-optional --no-audit --no-fund --force || echo "Minimal install completed"
-                                        }
-                                    }
+                                    # Simple, fast npm install
+                                    npm ci --silent --no-audit --no-fund || npm install --silent --no-audit --no-fund
                                     
                                     echo "Dependencies installed successfully"
                                     
