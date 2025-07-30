@@ -3,7 +3,35 @@ pipeline {
     
     environment {
         // Docker configurations
-        DOCKER_REGISTRY = "localhost:5000"
+        DOCKER_REGIS                                  # Rem                    # Remove any existing test networks
+                    echo "🗑️ Removing any existing test networks..."
+                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
+                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
+                            echo "Removing existing network: ${network}"
+                            docker network rm "${network}" 2>/dev/null || true
+                        fi
+                    doneexisting test containers (stopped or running)
+                    echo "🗑️ Removing any existing test containers..."
+                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
+                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+                            echo "Removing container: ${container}"
+                            docker rm -f "${container}" 2>/dev/null || true
+                        fi
+                    doneRem                    # Remove any existing test networks
+                    echo "🗑️ Removing any existing test networks..."
+                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
+                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
+                            echo "Removing existing network: ${network}"
+                            docker network rm "${network}" 2>/dev/null || true
+                        fi
+                    doneexisting test containers (stopped or running)
+                    echo "🗑️ Removing any existing test containers..."
+                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
+                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+                            echo "Removing container: ${container}"
+                            docker rm -f "${container}" 2>/dev/null || true
+                        fi
+                    doneocalhost:5000"
         DOCKER_IMAGE_BACKEND = "shopsphere-backend"
         DOCKER_IMAGE_FRONTEND = "shopsphere-frontend"
         DOCKER_IMAGE_ANALYTICS = "shopsphere-analytics"
@@ -92,7 +120,7 @@ pipeline {
                     
                     # Stop any running containers that might be using our ports or names
                     echo "🛑 Stopping any running test containers..."
-                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
                         if docker ps --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
                             echo "Stopping running container: ${container}"
                             docker stop "${container}" 2>/dev/null || true
@@ -101,7 +129,7 @@ pipeline {
                     
                     # Remove any existing test containers (stopped or running)
                     echo "�️ Removing any existing test containers..."
-                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
                         if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
                             echo "Removing container: ${container}"
                             docker rm -f "${container}" 2>/dev/null || true
@@ -119,7 +147,7 @@ pipeline {
                     
                     # Remove any existing test networks
                     echo "�️ Removing any existing test networks..."
-                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "shopsphere-test-${BUILD_NUMBER}"; do
+                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
                         if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
                             echo "Removing existing network: ${network}"
                             docker network rm "${network}" 2>/dev/null || true
@@ -203,13 +231,13 @@ version: '3.8'
 services:
   backend-test:
     image: shopsphere-backend:${BUILD_NUMBER}
-    container_name: test-backend
+    container_name: test-backend-${BUILD_NUMBER}
     ports:
       - "8011:8001"
     environment:
       - NODE_ENV=test
     networks:
-      - test-network
+      - test-network-${BUILD_NUMBER}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 10s
@@ -218,14 +246,14 @@ services:
   
   frontend-test:
     image: shopsphere-frontend:${BUILD_NUMBER}
-    container_name: test-frontend
+    container_name: test-frontend-${BUILD_NUMBER}
     ports:
       - "3010:3000"
     environment:
       - NODE_OPTIONS=--max-old-space-size=8192
       - NEXT_TELEMETRY_DISABLED=1
     networks:
-      - test-network
+      - test-network-${BUILD_NUMBER}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/"]
       interval: 15s
@@ -234,32 +262,32 @@ services:
 
   analytics-test:
     image: shopsphere-analytics:${BUILD_NUMBER}
-    container_name: test-analytics
+    container_name: test-analytics-${BUILD_NUMBER}
     ports:
       - "8012:8002"
     environment:
       - NODE_ENV=test
     networks:
-      - test-network
+      - test-network-${BUILD_NUMBER}
 
   notifications-test:
     image: shopsphere-notifications:${BUILD_NUMBER}
-    container_name: test-notifications
+    container_name: test-notifications-${BUILD_NUMBER}
     ports:
       - "8013:8003"
     environment:
       - NODE_ENV=test
     networks:
-      - test-network
+      - test-network-${BUILD_NUMBER}
 
 networks:
-  test-network:
+  test-network-${BUILD_NUMBER}:
     driver: bridge
 EOF
                         
                         # Create network first to avoid conflicts
                         echo "🌐 Creating test network..."
-                        docker network create test-network 2>/dev/null || echo "Network test-network already exists or failed to create, continuing..."
+                        docker network create test-network-${BUILD_NUMBER} 2>/dev/null || echo "Network test-network-${BUILD_NUMBER} already exists or failed to create, continuing..."
                         
                         # Start test containers
                         echo "🚀 Starting test containers..."
@@ -276,17 +304,17 @@ EOF
                         
                         # Check container logs for debugging
                         echo "📋 Backend container logs:"
-                        docker logs test-backend 2>&1 | tail -10 || echo "Cannot get backend logs"
+                        docker logs test-backend-${BUILD_NUMBER} 2>&1 | tail -10 || echo "Cannot get backend logs"
                         
                         echo "📋 Frontend container logs:"  
-                        docker logs test-frontend 2>&1 | tail -10 || echo "Cannot get frontend logs"
+                        docker logs test-frontend-${BUILD_NUMBER} 2>&1 | tail -10 || echo "Cannot get frontend logs"
                         
                         # Wait for backend to be ready (faster startup)
                         echo "📊 Checking Backend Health via localhost:"
                         BACKEND_HEALTHY=false
                         for i in $(seq 1 10); do
                             # First check if container is running
-                            if docker ps | grep -q "test-backend"; then
+                            if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
                                 # Check via localhost (Jenkins host can access mapped ports)
                                 if curl -f http://localhost:8011/health >/dev/null 2>&1; then
                                     echo "Backend is healthy via localhost:8011! ✅"
@@ -305,7 +333,7 @@ EOF
                         FRONTEND_HEALTHY=false
                         for i in $(seq 1 20); do
                             # First check if container is running
-                            if docker ps | grep -q "test-frontend"; then
+                            if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
                                 # Check via localhost (Jenkins host can access mapped ports)
                                 if curl -f http://localhost:3010/ >/dev/null 2>&1; then
                                     echo "Frontend is healthy via localhost:3010! ✅"
@@ -321,13 +349,13 @@ EOF
                         
                         # Check analytics and notifications containers are running (but no health check)
                         echo "📊 Checking Analytics and Notifications containers (no health check):"
-                        if docker ps | grep -q "test-analytics"; then
+                        if docker ps | grep -q "test-analytics-${BUILD_NUMBER}"; then
                             echo "Analytics container: ✅ RUNNING (health check skipped)"
                         else
                             echo "Analytics container: ❌ NOT RUNNING (but build succeeded)"
                         fi
                         
-                        if docker ps | grep -q "test-notifications"; then
+                        if docker ps | grep -q "test-notifications-${BUILD_NUMBER}"; then
                             echo "Notifications container: ✅ RUNNING (health check skipped)"
                         else
                             echo "Notifications container: ❌ NOT RUNNING (but build succeeded)"
@@ -337,7 +365,7 @@ EOF
                         echo "=== Final Health Check Status (Backend & Frontend Only) ==="
                         
                         # Check backend via localhost
-                        if docker ps | grep -q "test-backend"; then
+                        if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
                             if curl -f http://localhost:8011/health >/dev/null 2>&1; then
                                 echo "Backend: ✅ HEALTHY (via localhost:8011)"
                             else
@@ -348,7 +376,7 @@ EOF
                         fi
                         
                         # Check frontend via localhost  
-                        if docker ps | grep -q "test-frontend"; then
+                        if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
                             if curl -f http://localhost:3010/ >/dev/null 2>&1; then
                                 echo "Frontend: ✅ HEALTHY (via localhost:3010)"  
                             else
@@ -379,7 +407,7 @@ EOF
                     
                     # Remove test containers by name (more reliable)
                     echo "🔍 Checking for test containers to remove..."
-                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
                         if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
                             echo "Removing container: ${container}"
                             docker rm -f "${container}" 2>/dev/null || true
@@ -390,7 +418,7 @@ EOF
                     
                     # Remove test networks gracefully
                     echo "🔍 Checking for test networks to remove..."
-                    for network in "test-network" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
+                    for network in "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
                         if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
                             echo "Removing network: ${network}"
                             docker network rm "${network}" 2>/dev/null || true
@@ -445,7 +473,7 @@ EOF
                     fi
                     
                     # Remove test containers by name
-                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
                         if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
                             echo "Final removal of container: ${container}"
                             docker rm -f "${container}" 2>/dev/null || true
@@ -453,7 +481,7 @@ EOF
                     done
                     
                     # Remove test networks
-                    for network in "test-network" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
+                    for network in "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
                         if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
                             echo "Final removal of network: ${network}"
                             docker network rm "${network}" 2>/dev/null || true

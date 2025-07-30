@@ -9,6 +9,10 @@ echo "Testing all 4 services with 1GB memory + health checks"
 echo "Time: $(date)"
 echo ""
 
+# Use BUILD_NUMBER for unique naming (default to timestamp if not set)
+BUILD_NUMBER="${BUILD_NUMBER:-$(date +%Y%m%d%H%M%S)}"
+echo "🆔 Build Number: $BUILD_NUMBER"
+
 # Service configurations
 SERVICES=(
     "backend:backend:8001:8011"
@@ -17,22 +21,45 @@ SERVICES=(
     "notifications:microservices/notification-service:8003:8013"
 )
 
-LOG_FILE="all-services-test-$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="all-services-test-${BUILD_NUMBER}.log"
 echo "📝 Detailed logs: $LOG_FILE"
 
 # Cleanup existing test containers
 echo ""
 echo "🧹 Cleaning up existing test containers..."
-docker rm -f test-backend test-frontend test-analytics test-notifications 2>/dev/null || true
 
-# Create test network
+# Remove test containers gracefully (by BUILD_NUMBER)
+for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
+    if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+        echo "Removing existing container: ${container}"
+        docker rm -f "${container}" 2>/dev/null || true
+    else
+        echo "Container ${container} not found, skipping"
+    fi
+done
+
+# Remove test images gracefully (by BUILD_NUMBER)
+for image in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
+    if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image}:" 2>/dev/null; then
+        echo "Removing existing image: ${image}"
+        docker rmi "${image}" 2>/dev/null || true
+    else
+        echo "Image ${image} not found, skipping"
+    fi
+done
+
+# Create test network with BUILD_NUMBER
+NETWORK_NAME="test-network-${BUILD_NUMBER}"
 echo ""
-echo "🌐 Creating test network..."
-if ! docker network ls | grep -q test-network; then
-    docker network create test-network
-    echo "✅ Created test-network"
+echo "🌐 Creating test network: ${NETWORK_NAME}..."
+if docker network ls --format "{{.Name}}" | grep -q "^${NETWORK_NAME}$" 2>/dev/null; then
+    echo "✅ ${NETWORK_NAME} already exists"
 else
-    echo "✅ test-network already exists"
+    if docker network create "${NETWORK_NAME}" >/dev/null 2>&1; then
+        echo "✅ Created ${NETWORK_NAME}"
+    else
+        echo "⚠️ Failed to create ${NETWORK_NAME}, it may already exist"
+    fi
 fi
 
 # Build all services
@@ -47,7 +74,7 @@ for service_config in "${SERVICES[@]}"; do
     echo "🔨 Building $name service..."
     echo "Path: $path"
     echo "Ports: $external_port:$internal_port"
-    echo "Command: docker build --memory=1g --memory-swap=2g --shm-size=512m -t test-$name . --no-cache --progress=plain"
+    echo "Command: docker build --memory=1g --memory-swap=2g --shm-size=512m -t test-$name-${BUILD_NUMBER} . --no-cache --progress=plain"
     echo ""
     
     START_TIME=$(date +%s)
@@ -56,7 +83,7 @@ for service_config in "${SERVICES[@]}"; do
     echo "[$(date)] STARTING BUILD: $name service" >> "../../../$LOG_FILE"
     echo "========================================" >> "../../../$LOG_FILE"
     
-    if cd "$path" && timeout 300 docker build --memory=1g --memory-swap=2g --shm-size=512m -t "test-$name" . --no-cache --progress=plain 2>&1 | tee -a "../../../$LOG_FILE"; then
+    if cd "$path" && timeout 300 docker build --memory=1g --memory-swap=2g --shm-size=512m -t "test-$name-${BUILD_NUMBER}" . --no-cache --progress=plain 2>&1 | tee -a "../../../$LOG_FILE"; then
         END_TIME=$(date +%s)
         DURATION=$((END_TIME - START_TIME))
         echo ""
@@ -73,7 +100,7 @@ for service_config in "${SERVICES[@]}"; do
     fi
     
     # Check image size
-    IMAGE_SIZE=$(docker images "test-$name" --format "{{.Size}}")
+    IMAGE_SIZE=$(docker images "test-$name-${BUILD_NUMBER}" --format "{{.Size}}")
     echo "📦 $name image size: $IMAGE_SIZE"
     
     cd - >/dev/null
@@ -89,13 +116,13 @@ for service_config in "${SERVICES[@]}"; do
     
     echo ""
     echo "🐳 Starting $name container..."
-    echo "Command: docker run -d --name test-$name --network test-network -p $external_port:$internal_port test-$name"
+    echo "Command: docker run -d --name test-$name-${BUILD_NUMBER} --network ${NETWORK_NAME} -p $external_port:$internal_port test-$name-${BUILD_NUMBER}"
     
     if docker run -d \
-        --name "test-$name" \
-        --network test-network \
+        --name "test-$name-${BUILD_NUMBER}" \
+        --network "${NETWORK_NAME}" \
         -p "$external_port:$internal_port" \
-        "test-$name" 2>&1 | tee -a "$LOG_FILE"; then
+        "test-$name-${BUILD_NUMBER}" 2>&1 | tee -a "$LOG_FILE"; then
         echo "✅ $name: Container started successfully"
         echo "[$(date)] ✅ $name: Container started on port $external_port" >> "$LOG_FILE"
     else
@@ -106,7 +133,7 @@ for service_config in "${SERVICES[@]}"; do
     
     # Show container status immediately
     echo "📊 Container status:"
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep "test-$name" || echo "Container not found in ps output"
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep "test-$name-${BUILD_NUMBER}" || echo "Container not found in ps output"
 done
 
 # Wait for initialization
@@ -120,7 +147,7 @@ echo "🔍 PHASE 3: Health Checks"
 echo "========================="
 
 echo "📋 Container status:"
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep test-
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep "test-.*-${BUILD_NUMBER}"
 
 echo ""
 echo "🩺 Localhost health checks (using mapped ports):"
@@ -135,7 +162,7 @@ else
     echo "❌ Backend: Not responding on localhost:8011"
     echo "[$(date)] ❌ Backend: Health check failed (localhost:8011)" >> "$LOG_FILE"
     echo "📋 Backend container logs (last 10 lines):"
-    docker logs test-backend 2>&1 | tail -10 | tee -a "$LOG_FILE"
+    docker logs "test-backend-${BUILD_NUMBER}" 2>&1 | tail -10 | tee -a "$LOG_FILE"
 fi
 
 echo ""
@@ -149,7 +176,7 @@ else
     echo "❌ Frontend: Not responding on localhost:3010"
     echo "[$(date)] ❌ Frontend: Health check failed (localhost:3010)" >> "$LOG_FILE"
     echo "📋 Frontend container logs (last 10 lines):"
-    docker logs test-frontend 2>&1 | tail -10 | tee -a "$LOG_FILE"
+    docker logs "test-frontend-${BUILD_NUMBER}" 2>&1 | tail -10 | tee -a "$LOG_FILE"
 fi
 
 echo ""
@@ -163,7 +190,7 @@ else
     echo "⚠️ Analytics: No response on localhost:8012"
     echo "[$(date)] ⚠️ Analytics: No response (localhost:8012)" >> "$LOG_FILE"
     echo "📋 Analytics container logs (last 5 lines):"
-    docker logs test-analytics 2>&1 | tail -5 | tee -a "$LOG_FILE"
+    docker logs "test-analytics-${BUILD_NUMBER}" 2>&1 | tail -5 | tee -a "$LOG_FILE"
 fi
 
 echo ""
@@ -177,7 +204,7 @@ else
     echo "⚠️ Notifications: No response on localhost:8013"
     echo "[$(date)] ⚠️ Notifications: No response (localhost:8013)" >> "$LOG_FILE"
     echo "📋 Notifications container logs (last 5 lines):"
-    docker logs test-notifications 2>&1 | tail -5 | tee -a "$LOG_FILE"
+    docker logs "test-notifications-${BUILD_NUMBER}" 2>&1 | tail -5 | tee -a "$LOG_FILE"
 fi
 
 # Resource usage
@@ -185,17 +212,17 @@ echo ""
 echo "📊 PHASE 4: Resource Usage"
 echo "=========================="
 echo "🔋 Container resource usage:"
-docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" | grep test-
+docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" | grep "test-.*-${BUILD_NUMBER}"
 
 # Final summary
 echo ""
 echo "📋 FINAL SUMMARY"
 echo "================"
-RUNNING_COUNT=$(docker ps | grep test- | wc -l)
+RUNNING_COUNT=$(docker ps | grep "test-.*-${BUILD_NUMBER}" | wc -l)
 TOTAL_COUNT=${#SERVICES[@]}
 
 echo "🐳 Containers running: $RUNNING_COUNT/$TOTAL_COUNT"
-echo "🌐 Network: test-network"
+echo "🌐 Network: ${NETWORK_NAME}"
 echo "📊 Log file: $LOG_FILE"
 echo "🕐 Test completed: $(date)"
 
@@ -205,11 +232,34 @@ read -p "🧹 Clean up all test containers? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🧹 Cleaning up..."
-    docker rm -f $(docker ps -aq --filter "name=test-") 2>/dev/null
-    docker network rm test-network 2>/dev/null
-    docker rmi $(docker images | grep "test-" | awk '{print $3}') 2>/dev/null
+    
+    # Remove test containers gracefully (by BUILD_NUMBER)
+    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
+        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+            echo "Removing container: ${container}"
+            docker rm -f "${container}" 2>/dev/null || true
+        fi
+    done
+    
+    # Remove test network gracefully (by BUILD_NUMBER)
+    if docker network ls --format "{{.Name}}" | grep -q "^${NETWORK_NAME}$" 2>/dev/null; then
+        echo "Removing ${NETWORK_NAME}"
+        docker network rm "${NETWORK_NAME}" 2>/dev/null || true
+    fi
+    
+    # Remove test images gracefully (by BUILD_NUMBER)
+    for image in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
+        if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image}:" 2>/dev/null; then
+            echo "Removing image: ${image}"
+            docker rmi "${image}" 2>/dev/null || true
+        fi
+    done
+    
     echo "✅ Cleanup completed"
 else
     echo "⚠️ Test containers left running for inspection"
-    echo "   To clean up later: docker rm -f \$(docker ps -aq --filter \"name=test-\")"
+    echo "   To clean up later:"
+    echo "   docker rm -f test-backend-${BUILD_NUMBER} test-frontend-${BUILD_NUMBER} test-analytics-${BUILD_NUMBER} test-notifications-${BUILD_NUMBER}"
+    echo "   docker network rm ${NETWORK_NAME}"
+    echo "   docker rmi test-backend-${BUILD_NUMBER} test-frontend-${BUILD_NUMBER} test-analytics-${BUILD_NUMBER} test-notifications-${BUILD_NUMBER}"
 fi
