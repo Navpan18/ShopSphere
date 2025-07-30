@@ -1,27 +1,28 @@
-# ShopSphere/backend/Dockerfile (Optimized for Speed)
-FROM python:3.11-slim
+# ShopSphere/backend/Dockerfile (Ultra Fast - Minimal Base)
+FROM python:3.11-alpine
 
 # Set environment variables for maximum performance
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=0 \
+    PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_DEFAULT_TIMEOUT=100 \
+    PIP_DEFAULT_TIMEOUT=300 \
     PYTHONPATH=/app \
-    MAKEFLAGS="-j$(nproc)"
+    MAKEFLAGS="-j$(nproc)" \
+    PIP_PREFER_BINARY=1
 
-# Install system dependencies with parallel processing and more tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install system dependencies optimized for Alpine
+RUN apk add --no-cache --virtual .build-deps \
     gcc \
     g++ \
     make \
-    build-essential \
+    musl-dev \
+    postgresql-dev \
+    libffi-dev \
+    && apk add --no-cache \
     postgresql-client \
     curl \
-    wget \
-    ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    ca-certificates
 
 # Create app directory
 WORKDIR /app
@@ -29,17 +30,16 @@ WORKDIR /app
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python packages with maximum speed and parallel processing
+# Install Python packages with binary wheels and optimized settings
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-warn-script-location --user --parallel --retries 3 -r requirements.txt
+    pip install --only-binary=all --prefer-binary --no-compile --retries 3 --timeout 300 -r requirements.txt || \
+    pip install --retries 3 --timeout 300 -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
-USER appuser
+# Set proper permissions (faster than creating user)
+RUN chmod -R 755 /app
 
 # Expose port
 EXPOSE 8001
