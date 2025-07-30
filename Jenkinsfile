@@ -155,33 +155,33 @@ pipeline {
                     sh '''
                         echo "=== 🐳 Starting Test Containers for Health Check ==="
                         
-                        # Create temporary docker-compose for testing with unique network
+                        # Create temporary docker-compose for testing with static network
                         cat > docker-compose.test.yml << EOF
 version: '3.8'
 services:
   backend-test:
     image: shopsphere-backend:${BUILD_NUMBER}
-    container_name: test-backend-${BUILD_NUMBER}
+    container_name: test-backend
     ports:
       - "8011:8001"
     environment:
       - NODE_ENV=test
     networks:
-      - test-network-${BUILD_NUMBER}
+      - test-network
   
   frontend-test:
     image: shopsphere-frontend:${BUILD_NUMBER}
-    container_name: test-frontend-${BUILD_NUMBER}
+    container_name: test-frontend
     ports:
       - "3010:3000"
     environment:
       - NODE_OPTIONS=--max-old-space-size=8192
       - NEXT_TELEMETRY_DISABLED=1
     networks:
-      - test-network-${BUILD_NUMBER}
+      - test-network
 
 networks:
-  test-network-${BUILD_NUMBER}:
+  test-network:
     driver: bridge
 EOF
                         
@@ -199,19 +199,19 @@ EOF
                         
                         # Check container logs for debugging
                         echo "📋 Backend container logs:"
-                        docker logs test-backend-${BUILD_NUMBER} 2>&1 | tail -10 || echo "Cannot get backend logs"
+                        docker logs test-backend 2>&1 | tail -10 || echo "Cannot get backend logs"
                         
                         echo "📋 Frontend container logs:"  
-                        docker logs test-frontend-${BUILD_NUMBER} 2>&1 | tail -10 || echo "Cannot get frontend logs"
+                        docker logs test-frontend 2>&1 | tail -10 || echo "Cannot get frontend logs"
                         
                         # Wait for backend to be ready (faster startup)
                         echo "📊 Checking Backend Health via Test Network:"
                         BACKEND_HEALTHY=false
                         for i in $(seq 1 10); do
                             # First check if container is running
-                            if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
+                            if docker ps | grep -q "test-backend"; then
                                 # Check via docker network communication from frontend container
-                                if docker exec test-frontend-${BUILD_NUMBER} curl -f http://test-backend-${BUILD_NUMBER}:8001/health >/dev/null 2>&1; then
+                                if docker exec test-frontend curl -f http://test-backend:8001/health >/dev/null 2>&1; then
                                     echo "Backend is healthy via test network! ✅"
                                     BACKEND_HEALTHY=true
                                     break
@@ -228,9 +228,9 @@ EOF
                         FRONTEND_HEALTHY=false
                         for i in $(seq 1 20); do
                             # First check if container is running
-                            if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
+                            if docker ps | grep -q "test-frontend"; then
                                 # Check via docker network communication from backend container
-                                if docker exec test-backend-${BUILD_NUMBER} curl -f http://test-frontend-${BUILD_NUMBER}:3000/ >/dev/null 2>&1; then
+                                if docker exec test-backend curl -f http://test-frontend:3000/ >/dev/null 2>&1; then
                                     echo "Frontend is healthy via test network! ✅"
                                     FRONTEND_HEALTHY=true
                                     break
@@ -246,8 +246,8 @@ EOF
                         echo "=== Final Network Health Check Status ==="
                         
                         # Check backend via network
-                        if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
-                            if docker exec test-frontend-${BUILD_NUMBER} curl -f http://test-backend-${BUILD_NUMBER}:8001/health >/dev/null 2>&1; then
+                        if docker ps | grep -q "test-backend"; then
+                            if docker exec test-frontend curl -f http://test-backend:8001/health >/dev/null 2>&1; then
                                 echo "Backend: ✅ HEALTHY (via test network)"
                             else
                                 echo "Backend: ❌ RUNNING BUT UNHEALTHY via network (but continuing pipeline)"
@@ -257,8 +257,8 @@ EOF
                         fi
                         
                         # Check frontend via network  
-                        if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
-                            if docker exec test-backend-${BUILD_NUMBER} curl -f http://test-frontend-${BUILD_NUMBER}:3000/ >/dev/null 2>&1; then
+                        if docker ps | grep -q "test-frontend"; then
+                            if docker exec test-backend curl -f http://test-frontend:3000/ >/dev/null 2>&1; then
                                 echo "Frontend: ✅ HEALTHY (via test network)"  
                             else
                                 echo "Frontend: ❌ RUNNING BUT UNHEALTHY via network (but continuing pipeline)"
