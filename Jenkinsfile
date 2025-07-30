@@ -3,21 +3,7 @@ pipeline {
     
     environment {
         // Docker configurations
-        DOCKER_REGIS                                  # Rem                    # Remove any existing test networks
-                    echo "🗑️ Removing any existing test networks..."
-                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
-                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
-                            echo "Removing existing network: ${network}"
-                            docker network rm "${network}" 2>/dev/null || true
-                        fi
-                    doneexisting test containers (stopped or running)
-                    echo "🗑️ Removing any existing test containers..."
-                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
-                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
-                            echo "Removing container: ${container}"
-                            docker rm -f "${container}" 2>/dev/null || true
-                        fi
-                    doneRem                    # Remove any existing test networks
+        DOCKER_REGIS                    # Rem                    # Remove any existing test networks
                     echo "🗑️ Removing any existing test networks..."
                     for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
                         if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
@@ -147,7 +133,7 @@ pipeline {
                     
                     # Remove any existing test networks
                     echo "�️ Removing any existing test networks..."
-                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
+                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "shopsphere-test-${BUILD_NUMBER}"; do
                         if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
                             echo "Removing existing network: ${network}"
                             docker network rm "${network}" 2>/dev/null || true
