@@ -106,9 +106,9 @@ pipeline {
                 stage('Build Backend') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Backend with Maximum Resources ==="
+                            echo "=== 🏗️ Building Backend with Optimized 1GB Memory ==="
                             cd backend
-                            docker build --memory=6g --memory-swap=12g --shm-size=2g -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} . --no-cache
+                            docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} . --no-cache
                             echo "Backend build completed ✅"
                         '''
                     }
@@ -117,9 +117,9 @@ pipeline {
                 stage('Build Frontend') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Frontend with High Memory ==="
+                            echo "=== 🏗️ Building Frontend with Optimized 1GB Memory ==="
                             cd frontend
-                            docker build --memory=4g --memory-swap=8g -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} . --no-cache
+                            docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} . --no-cache
                             echo "Frontend build completed ✅"
                         '''
                     }
@@ -128,9 +128,9 @@ pipeline {
                 stage('Build Analytics Service') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Analytics Service ==="
+                            echo "=== 🏗️ Building Analytics Service with Optimized 1GB Memory ==="
                             cd microservices/analytics-service
-                            docker build -t ${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER} .
+                            docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER} . --no-cache
                             echo "Analytics service build completed ✅"
                         '''
                     }
@@ -139,9 +139,9 @@ pipeline {
                 stage('Build Notifications Service') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Notifications Service ==="
+                            echo "=== 🏗️ Building Notifications Service with Optimized 1GB Memory ==="
                             cd microservices/notification-service
-                            docker build -t ${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER} .
+                            docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER} . --no-cache
                             echo "Notifications service build completed ✅"
                         '''
                     }
