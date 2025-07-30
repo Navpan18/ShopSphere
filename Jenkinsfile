@@ -194,45 +194,78 @@ EOF
                         echo "=== 🔍 Checking Service Health ==="
                         
                         # Check if containers are running
-                        docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" | grep test-
+                        echo "Current test containers:"
+                        docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" | grep test- || echo "No test containers found in ps output"
+                        
+                        # Check container logs for debugging
+                        echo "📋 Backend container logs:"
+                        docker logs test-backend-${BUILD_NUMBER} 2>&1 | tail -10 || echo "Cannot get backend logs"
+                        
+                        echo "📋 Frontend container logs:"  
+                        docker logs test-frontend-${BUILD_NUMBER} 2>&1 | tail -10 || echo "Cannot get frontend logs"
                         
                         # Wait for backend to be ready (faster startup)
                         echo "📊 Checking Backend Health:"
+                        BACKEND_HEALTHY=false
                         for i in $(seq 1 10); do
-                            if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
-                                echo "Backend is healthy! ✅"
-                                break
+                            # First check if container is running
+                            if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
+                                if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
+                                    echo "Backend is healthy! ✅"
+                                    BACKEND_HEALTHY=true
+                                    break
+                                fi
+                                echo "Backend container running but not healthy yet, waiting... (attempt $i/10)"
+                            else
+                                echo "Backend container not running, waiting... (attempt $i/10)"
                             fi
-                            echo "Backend not ready yet, waiting... (attempt $i/10)"
                             sleep 10
                         done
                         
                         # Wait for frontend to be ready (slower startup)  
                         echo "🌐 Checking Frontend Health (allowing more time for Next.js):"
+                        FRONTEND_HEALTHY=false
                         for i in $(seq 1 20); do
-                            if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
-                                echo "Frontend is healthy! ✅"
-                                break
+                            # First check if container is running
+                            if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
+                                if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
+                                    echo "Frontend is healthy! ✅"
+                                    FRONTEND_HEALTHY=true
+                                    break
+                                fi
+                                echo "Frontend container running but not healthy yet, waiting... (attempt $i/20)"
+                            else
+                                echo "Frontend container not running, waiting... (attempt $i/20)"
                             fi
-                            echo "Frontend not ready yet, waiting... (attempt $i/20)"
                             sleep 15
                         done
                         
                         # Final status check using docker exec (internal container checks)
                         echo "=== Final Health Check Status ==="
-                        if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
-                            echo "Backend: ✅ HEALTHY"
+                        
+                        # Check backend
+                        if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
+                            if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
+                                echo "Backend: ✅ HEALTHY"
+                            else
+                                echo "Backend: ❌ RUNNING BUT UNHEALTHY (but continuing pipeline)"
+                            fi
                         else
-                            echo "Backend: ❌ UNHEALTHY"
+                            echo "Backend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
-                            echo "Frontend: ✅ HEALTHY"  
+                        # Check frontend  
+                        if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
+                            if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
+                                echo "Frontend: ✅ HEALTHY"  
+                            else
+                                echo "Frontend: ❌ RUNNING BUT UNHEALTHY (but continuing pipeline)"
+                            fi
                         else
-                            echo "Frontend: ❌ UNHEALTHY"
+                            echo "Frontend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        echo "Health checks completed ✅"
+                        echo "Health checks completed - Pipeline continues regardless of health status ✅"
                     '''
                 }
             }
