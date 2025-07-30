@@ -155,7 +155,7 @@ pipeline {
                     sh '''
                         echo "=== 🐳 Starting Test Containers for Health Check ==="
                         
-                        # Create temporary docker-compose for testing with static network
+                        # Create temporary docker-compose for testing with all 4 services
                         cat > docker-compose.test.yml << EOF
 version: '3.8'
 services:
@@ -177,6 +177,26 @@ services:
     environment:
       - NODE_OPTIONS=--max-old-space-size=8192
       - NEXT_TELEMETRY_DISABLED=1
+    networks:
+      - test-network
+
+  analytics-test:
+    image: shopsphere-analytics:${BUILD_NUMBER}
+    container_name: test-analytics
+    ports:
+      - "8012:8002"
+    environment:
+      - NODE_ENV=test
+    networks:
+      - test-network
+
+  notifications-test:
+    image: shopsphere-notifications:${BUILD_NUMBER}
+    container_name: test-notifications
+    ports:
+      - "8013:8003"
+    environment:
+      - NODE_ENV=test
     networks:
       - test-network
 
@@ -205,18 +225,18 @@ EOF
                         docker logs test-frontend 2>&1 | tail -10 || echo "Cannot get frontend logs"
                         
                         # Wait for backend to be ready (faster startup)
-                        echo "📊 Checking Backend Health via Test Network:"
+                        echo "📊 Checking Backend Health via localhost:"
                         BACKEND_HEALTHY=false
                         for i in $(seq 1 10); do
                             # First check if container is running
                             if docker ps | grep -q "test-backend"; then
-                                # Check via docker network communication from frontend container
-                                if docker exec test-frontend curl -f http://test-backend:8001/health >/dev/null 2>&1; then
-                                    echo "Backend is healthy via test network! ✅"
+                                # Check via localhost (Jenkins host can access mapped ports)
+                                if curl -f http://localhost:8011/health >/dev/null 2>&1; then
+                                    echo "Backend is healthy via localhost:8011! ✅"
                                     BACKEND_HEALTHY=true
                                     break
                                 fi
-                                echo "Backend container running but not healthy via network yet, waiting... (attempt $i/10)"
+                                echo "Backend container running but not healthy via localhost yet, waiting... (attempt $i/10)"
                             else
                                 echo "Backend container not running, waiting... (attempt $i/10)"
                             fi
@@ -224,47 +244,107 @@ EOF
                         done
                         
                         # Wait for frontend to be ready (slower startup)  
-                        echo "🌐 Checking Frontend Health via Test Network:"
+                        echo "🌐 Checking Frontend Health via localhost:"
                         FRONTEND_HEALTHY=false
                         for i in $(seq 1 20); do
                             # First check if container is running
                             if docker ps | grep -q "test-frontend"; then
-                                # Check via docker network communication from backend container
-                                if docker exec test-backend curl -f http://test-frontend:3000/ >/dev/null 2>&1; then
-                                    echo "Frontend is healthy via test network! ✅"
+                                # Check via localhost (Jenkins host can access mapped ports)
+                                if curl -f http://localhost:3010/ >/dev/null 2>&1; then
+                                    echo "Frontend is healthy via localhost:3010! ✅"
                                     FRONTEND_HEALTHY=true
                                     break
                                 fi
-                                echo "Frontend container running but not healthy via network yet, waiting... (attempt $i/20)"
+                                echo "Frontend container running but not healthy via localhost yet, waiting... (attempt $i/20)"
                             else
                                 echo "Frontend container not running, waiting... (attempt $i/20)"
                             fi
                             sleep 15
                         done
                         
-                        # Final status check using docker network communication
-                        echo "=== Final Network Health Check Status ==="
-                        
-                        # Check backend via network
-                        if docker ps | grep -q "test-backend"; then
-                            if docker exec test-frontend curl -f http://test-backend:8001/health >/dev/null 2>&1; then
-                                echo "Backend: ✅ HEALTHY (via test network)"
+                        # Wait for analytics to be ready
+                        echo "📊 Checking Analytics Health via localhost:"
+                        ANALYTICS_HEALTHY=false
+                        for i in $(seq 1 10); do
+                            # First check if container is running
+                            if docker ps | grep -q "test-analytics"; then
+                                # Check via localhost (may not have health endpoint)
+                                if curl -f http://localhost:8012/ >/dev/null 2>&1; then
+                                    echo "Analytics is responding via localhost:8012! ✅"
+                                    ANALYTICS_HEALTHY=true
+                                    break
+                                fi
+                                echo "Analytics container running but not responding via localhost yet, waiting... (attempt $i/10)"
                             else
-                                echo "Backend: ❌ RUNNING BUT UNHEALTHY via network (but continuing pipeline)"
+                                echo "Analytics container not running, waiting... (attempt $i/10)"
+                            fi
+                            sleep 10
+                        done
+                        
+                        # Wait for notifications to be ready
+                        echo "📧 Checking Notifications Health via localhost:"
+                        NOTIFICATIONS_HEALTHY=false
+                        for i in $(seq 1 10); do
+                            # First check if container is running
+                            if docker ps | grep -q "test-notifications"; then
+                                # Check via localhost (may not have health endpoint)
+                                if curl -f http://localhost:8013/ >/dev/null 2>&1; then
+                                    echo "Notifications is responding via localhost:8013! ✅"
+                                    NOTIFICATIONS_HEALTHY=true
+                                    break
+                                fi
+                                echo "Notifications container running but not responding via localhost yet, waiting... (attempt $i/10)"
+                            else
+                                echo "Notifications container not running, waiting... (attempt $i/10)"
+                            fi
+                            sleep 10
+                        done
+                        
+                        # Final status check using localhost
+                        echo "=== Final Health Check Status (via localhost) ==="
+                        
+                        # Check backend via localhost
+                        if docker ps | grep -q "test-backend"; then
+                            if curl -f http://localhost:8011/health >/dev/null 2>&1; then
+                                echo "Backend: ✅ HEALTHY (via localhost:8011)"
+                            else
+                                echo "Backend: ❌ RUNNING BUT UNHEALTHY via localhost (but continuing pipeline)"
                             fi
                         else
                             echo "Backend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        # Check frontend via network  
+                        # Check frontend via localhost  
                         if docker ps | grep -q "test-frontend"; then
-                            if docker exec test-backend curl -f http://test-frontend:3000/ >/dev/null 2>&1; then
-                                echo "Frontend: ✅ HEALTHY (via test network)"  
+                            if curl -f http://localhost:3010/ >/dev/null 2>&1; then
+                                echo "Frontend: ✅ HEALTHY (via localhost:3010)"  
                             else
-                                echo "Frontend: ❌ RUNNING BUT UNHEALTHY via network (but continuing pipeline)"
+                                echo "Frontend: ❌ RUNNING BUT UNHEALTHY via localhost (but continuing pipeline)"
                             fi
                         else
                             echo "Frontend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
+                        fi
+                        
+                        # Check analytics via localhost
+                        if docker ps | grep -q "test-analytics"; then
+                            if curl -f http://localhost:8012/ >/dev/null 2>&1; then
+                                echo "Analytics: ✅ RESPONDING (via localhost:8012)"
+                            else
+                                echo "Analytics: ❌ RUNNING BUT NOT RESPONDING via localhost (but continuing pipeline)"
+                            fi
+                        else
+                            echo "Analytics: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
+                        fi
+                        
+                        # Check notifications via localhost
+                        if docker ps | grep -q "test-notifications"; then
+                            if curl -f http://localhost:8013/ >/dev/null 2>&1; then
+                                echo "Notifications: ✅ RESPONDING (via localhost:8013)"
+                            else
+                                echo "Notifications: ❌ RUNNING BUT NOT RESPONDING via localhost (but continuing pipeline)"
+                            fi
+                        else
+                            echo "Notifications: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
                         echo "Network health checks completed - Pipeline continues regardless of health status ✅"
