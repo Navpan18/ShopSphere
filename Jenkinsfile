@@ -3,21 +3,7 @@ pipeline {
     
     environment {
         // Docker configurations
-        DOCKER_REGIS                    # Rem                    # Remove any existing test networks
-                    echo "🗑️ Removing any existing test networks..."
-                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
-                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
-                            echo "Removing existing network: ${network}"
-                            docker network rm "${network}" 2>/dev/null || true
-                        fi
-                    doneexisting test containers (stopped or running)
-                    echo "🗑️ Removing any existing test containers..."
-                    for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
-                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
-                            echo "Removing container: ${container}"
-                            docker rm -f "${container}" 2>/dev/null || true
-                        fi
-                    doneocalhost:5000"
+        DOCKER_REGISTRY = "localhost:5000"
         DOCKER_IMAGE_BACKEND = "shopsphere-backend"
         DOCKER_IMAGE_FRONTEND = "shopsphere-frontend"
         DOCKER_IMAGE_ANALYTICS = "shopsphere-analytics"
@@ -114,7 +100,7 @@ pipeline {
                     done
                     
                     # Remove any existing test containers (stopped or running)
-                    echo "�️ Removing any existing test containers..."
+                    echo "🗑️ Removing any existing test containers..."
                     for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
                         if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
                             echo "Removing container: ${container}"
@@ -132,8 +118,8 @@ pipeline {
                     done
                     
                     # Remove any existing test networks
-                    echo "�️ Removing any existing test networks..."
-                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "shopsphere-test-${BUILD_NUMBER}"; do
+                    echo "🗑️ Removing any existing test networks..."
+                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}"; do
                         if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
                             echo "Removing existing network: ${network}"
                             docker network rm "${network}" 2>/dev/null || true
@@ -162,7 +148,10 @@ pipeline {
                             echo "=== 🏗️ Building Backend with Optimized 1GB Memory ==="
                             cd backend
                             docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} . --no-cache
-                            echo "Backend build completed ✅"
+                            echo "✅ Backend build completed"
+                            
+                            # Show image info
+                            echo "📦 Backend image size: $(docker images ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} --format '{{.Size}}')"
                         '''
                     }
                 }
@@ -173,29 +162,38 @@ pipeline {
                             echo "=== 🏗️ Building Frontend with Optimized 1GB Memory ==="
                             cd frontend
                             docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} . --no-cache
-                            echo "Frontend build completed ✅"
+                            echo "✅ Frontend build completed"
+                            
+                            # Show image info
+                            echo "📦 Frontend image size: $(docker images ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} --format '{{.Size}}')"
                         '''
                     }
                 }
                 
-                stage('Build Analytics Service') {
+                stage('Build Analytics') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Analytics Service with Optimized 1GB Memory ==="
+                            echo "=== 🏗️ Building Analytics with Optimized 1GB Memory ==="
                             cd microservices/analytics-service
                             docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER} . --no-cache
-                            echo "Analytics service build completed ✅"
+                            echo "✅ Analytics build completed"
+                            
+                            # Show image info
+                            echo "📦 Analytics image size: $(docker images ${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER} --format '{{.Size}}')"
                         '''
                     }
                 }
                 
-                stage('Build Notifications Service') {
+                stage('Build Notifications') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Notifications Service with Optimized 1GB Memory ==="
+                            echo "=== 🏗️ Building Notifications with Optimized 1GB Memory ==="
                             cd microservices/notification-service
                             docker build --memory=1g --memory-swap=2g --shm-size=1g -t ${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER} . --no-cache
-                            echo "Notifications service build completed ✅"
+                            echo "✅ Notifications build completed"
+                            
+                            # Show image info
+                            echo "📦 Notifications image size: $(docker images ${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER} --format '{{.Size}}')"
                         '''
                     }
                 }
@@ -450,101 +448,68 @@ EOF
     post {
         always {
             script {
-                echo "=== 🧹 Final Cleanup ==="
                 sh '''
-                    # Ensure all test containers are stopped and removed
-                    echo "🔍 Final container cleanup..."
-                    if [ -f docker-compose.test.yml ]; then
-                        docker-compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
-                    fi
+                    echo "=== 📊 POST-BUILD CLEANUP AND SUMMARY ==="
+                    echo "Build: ${BUILD_NUMBER}"
+                    echo "Status: ${currentBuild.currentResult}"
+                    echo "Duration: ${currentBuild.durationString}"
                     
-                    # Remove test containers by name
+                    # Force cleanup of any remaining test resources
+                    echo "🔧 Final cleanup of any remaining test resources..."
                     for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
-                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
-                            echo "Final removal of container: ${container}"
-                            docker rm -f "${container}" 2>/dev/null || true
-                        fi
+                        docker rm -f "${container}" 2>/dev/null || true
                     done
                     
-                    # Remove test networks
+                    # Remove test networks gracefully
                     for network in "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
-                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
-                            echo "Final removal of network: ${network}"
-                            docker network rm "${network}" 2>/dev/null || true
-                        fi
+                        docker network rm "${network}" 2>/dev/null || true
                     done
                     
-                    # Clean up test files
-                    rm -f docker-compose.test.yml || true
-                    
-                    # Final system cleanup
-                    docker container prune -f || true
-                    docker network prune -f || true
-                    
-                    echo "Final cleanup completed ✅"
+                    # Show final docker state
+                    echo "📋 Final Docker state:"
+                    echo "Running containers: $(docker ps --format '{{.Names}}' | wc -l)"
+                    echo "Total images: $(docker images | wc -l)"
+                    echo "Networks: $(docker network ls | wc -l)"
                 '''
+                
+                // Always clean workspace
+                cleanWs()
             }
         }
         
         success {
             script {
-                echo "=== ✅ BUILD PIPELINE SUCCESSFUL ==="
-                sh '''
-                    echo "🎉 All builds completed successfully!"
-                    echo "📊 Build: ${BUILD_NUMBER}"
-                    echo "🔄 Commit: ${GIT_COMMIT_SHORT}"
-                    echo "🌐 Backend/Frontend health checked, Analytics/Notifications built only ✅"
-                    
-                    # Save build summary
-                    mkdir -p build-artifacts
-                    BRANCH_NAME="${BRANCH_NAME:-main}"
-                    cat > build-artifacts/build-success.txt << EOF
-ShopSphere Build Summary
-=======================
-✅ Status: SUCCESS
+                echo "🎉 BUILD SUCCESSFUL! 🎉"
+                echo '''
 🏗️ Build: ${BUILD_NUMBER}
-🔄 Commit: ${GIT_COMMIT_SHORT}
-🌿 Branch: ${BRANCH_NAME}
-⏱️ Completed: $(date)
+🎯 All services built successfully:
+  ✅ Backend (shopsphere-backend:${BUILD_NUMBER})
+  ✅ Frontend (shopsphere-frontend:${BUILD_NUMBER}) 
+  ✅ Analytics (shopsphere-analytics:${BUILD_NUMBER})
+  ✅ Notifications (shopsphere-notifications:${BUILD_NUMBER})
 
-Services Built:
-- Backend: ✅
-- Frontend: ✅  
-- Analytics: ✅
-- Notifications: ✅
-
-Health Checks:
-- Backend: ✅ (localhost:8011/health)
-- Frontend: ✅ (localhost:3010/)
-- Analytics: Built only (no health check)
-- Notifications: Built only (no health check)
-Cleanup: ✅
-EOF
-                '''
+📊 Build completed successfully! All Docker images are ready for deployment.
+'''
+                currentBuild.description = "✅ Success - Build ${BUILD_NUMBER}"
             }
         }
         
         failure {
             script {
-                echo "=== ❌ BUILD PIPELINE FAILED ==="
-                sh '''
-                    echo "💥 Build failed!"
-                    echo "📊 Build: ${BUILD_NUMBER}"
-                    echo "🔄 Commit: ${GIT_COMMIT_SHORT}"
-                    
-                    # Save failure details
-                    mkdir -p build-artifacts
-                    BRANCH_NAME="${BRANCH_NAME:-main}"
-                    cat > build-artifacts/build-failure.txt << EOF
-ShopSphere Build Failure
-========================
-❌ Status: FAILED
+                echo "❌ BUILD FAILED!"
+                echo '''
 🏗️ Build: ${BUILD_NUMBER}
-🔄 Commit: ${GIT_COMMIT_SHORT}
-🌿 Branch: ${BRANCH_NAME}
-⏱️ Failed: $(date)
-EOF
-                '''
+❌ Build failed - check logs above for details
+
+💡 Common issues:
+  - Docker memory limits
+  - Missing dependencies
+  - Network conflicts
+  - Port conflicts
+
+🔧 Cleanup completed automatically
+'''
+                currentBuild.description = "❌ Failed - Build ${BUILD_NUMBER}"
             }
         }
     }
