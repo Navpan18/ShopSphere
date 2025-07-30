@@ -106,9 +106,9 @@ pipeline {
                 stage('Build Backend') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Backend ==="
+                            echo "=== 🏗️ Building Backend with Maximum Resources ==="
                             cd backend
-                            docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} .
+                            docker build --memory=6g --memory-swap=12g --shm-size=2g -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} . --no-cache
                             echo "Backend build completed ✅"
                         '''
                     }

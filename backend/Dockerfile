@@ -1,25 +1,37 @@
-# ShopSphere/backend/Dockerfile (Improved version)
+# ShopSphere/backend/Dockerfile (Optimized for Speed)
 FROM python:3.11-slim
 
-# Set environment variables
+# Set environment variables for maximum performance
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_NO_CACHE_DIR=0 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100 \
+    PYTHONPATH=/app \
+    MAKEFLAGS="-j$(nproc)"
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies with parallel processing and more tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
+    make \
+    build-essential \
     postgresql-client \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Create app directory
 WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Python packages with maximum speed and parallel processing
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --no-warn-script-location --user --parallel --retries 3 -r requirements.txt
 
 # Copy application code
 COPY . .
