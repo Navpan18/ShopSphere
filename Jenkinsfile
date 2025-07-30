@@ -199,7 +199,7 @@ EOF
                         # Wait for backend to be ready (faster startup)
                         echo "📊 Checking Backend Health:"
                         for i in $(seq 1 10); do
-                            if curl -f http://localhost:8011/health >/dev/null 2>&1; then
+                            if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
                                 echo "Backend is healthy! ✅"
                                 break
                             fi
@@ -207,10 +207,10 @@ EOF
                             sleep 10
                         done
                         
-                        # Wait for frontend to be ready (slower startup)
+                        # Wait for frontend to be ready (slower startup)  
                         echo "🌐 Checking Frontend Health (allowing more time for Next.js):"
                         for i in $(seq 1 20); do
-                            if curl -f http://localhost:3010/ >/dev/null 2>&1; then
+                            if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
                                 echo "Frontend is healthy! ✅"
                                 break
                             fi
@@ -218,10 +218,19 @@ EOF
                             sleep 15
                         done
                         
-                        # Final status check
+                        # Final status check using docker exec (internal container checks)
                         echo "=== Final Health Check Status ==="
-                        curl -f http://localhost:8011/health && echo "Backend: ✅ HEALTHY" || echo "Backend: ❌ UNHEALTHY"
-                        curl -f http://localhost:3010/ && echo "Frontend: ✅ HEALTHY" || echo "Frontend: ❌ UNHEALTHY"
+                        if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
+                            echo "Backend: ✅ HEALTHY"
+                        else
+                            echo "Backend: ❌ UNHEALTHY"
+                        fi
+                        
+                        if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
+                            echo "Frontend: ✅ HEALTHY"  
+                        else
+                            echo "Frontend: ❌ UNHEALTHY"
+                        fi
                         
                         echo "Health checks completed ✅"
                     '''
