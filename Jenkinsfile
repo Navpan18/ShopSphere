@@ -81,22 +81,61 @@ pipeline {
             }
         }
         
-        stage('🔍 Environment Check') {
+        stage('🔍 Environment Check & Pre-Build Cleanup') {
             steps {
                 sh '''
                     echo "=== 🔧 Environment Check ==="
                     echo "Docker Version: $(docker --version)"
                     echo "Docker Compose Version: $(docker-compose --version)"
                     
-                    # Clean previous build artifacts and networks
-                    docker system prune -f || true
-                    docker network prune -f || true
+                    echo "=== 🧹 COMPREHENSIVE PRE-BUILD CLEANUP ==="
+                    
+                    # Stop any running containers that might be using our ports or names
+                    echo "🛑 Stopping any running test containers..."
+                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                        if docker ps --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+                            echo "Stopping running container: ${container}"
+                            docker stop "${container}" 2>/dev/null || true
+                        fi
+                    done
+                    
+                    # Remove any existing test containers (stopped or running)
+                    echo "�️ Removing any existing test containers..."
+                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+                            echo "Removing container: ${container}"
+                            docker rm -f "${container}" 2>/dev/null || true
+                        fi
+                    done
+                    
+                    # Remove any existing test images to prevent "already exists" errors
+                    echo "🗑️ Removing any existing test/build images..."
+                    for image in "${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}" "${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}" "${DOCKER_IMAGE_ANALYTICS}:${BUILD_NUMBER}" "${DOCKER_IMAGE_NOTIFICATIONS}:${BUILD_NUMBER}"; do
+                        if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image}$" 2>/dev/null; then
+                            echo "Removing existing image: ${image}"
+                            docker rmi -f "${image}" 2>/dev/null || true
+                        fi
+                    done
                     
                     # Remove any existing test networks
-                    docker network rm shopsphere-build-network shopsphere-test-network || true
+                    echo "�️ Removing any existing test networks..."
+                    for network in "shopsphere-build-network" "shopsphere-test-network" "test-network" "shopsphere-test-${BUILD_NUMBER}"; do
+                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
+                            echo "Removing existing network: ${network}"
+                            docker network rm "${network}" 2>/dev/null || true
+                        fi
+                    done
                     
-                    # Create unique test network for this build
-                    docker network create shopsphere-test-${BUILD_NUMBER} || true
+                    # Clean up any leftover docker-compose files
+                    echo "🗑️ Removing any leftover docker-compose test files..."
+                    rm -f docker-compose.test.yml || true
+                    
+                    # General Docker cleanup
+                    echo "🧽 General Docker cleanup..."
+                    docker container prune -f || true
+                    docker network prune -f || true
+                    
+                    echo "✅ Pre-build cleanup completed - ready for fresh builds!"
                 '''
             }
         }
@@ -155,6 +194,9 @@ pipeline {
                     sh '''
                         echo "=== 🐳 Starting Test Containers for Health Check ==="
                         
+                        # Ensure no conflicts before creating docker-compose
+                        echo "🔍 Final check - ensuring no conflicting resources..."
+                        
                         # Create temporary docker-compose for testing with all 4 services
                         cat > docker-compose.test.yml << EOF
 version: '3.8'
@@ -168,6 +210,11 @@ services:
       - NODE_ENV=test
     networks:
       - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
   
   frontend-test:
     image: shopsphere-frontend:${BUILD_NUMBER}
@@ -179,6 +226,11 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
     networks:
       - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
   analytics-test:
     image: shopsphere-analytics:${BUILD_NUMBER}
@@ -205,13 +257,18 @@ networks:
     driver: bridge
 EOF
                         
+                        # Create network first to avoid conflicts
+                        echo "🌐 Creating test network..."
+                        docker network create test-network 2>/dev/null || echo "Network test-network already exists or failed to create, continuing..."
+                        
                         # Start test containers
+                        echo "🚀 Starting test containers..."
                         docker-compose -f docker-compose.test.yml up -d
                         
                         echo "⏰ Waiting 30 seconds for containers to initialize..."
                         sleep 30
                         
-                        echo "=== 🔍 Checking Service Health ==="
+                        echo "=== 🔍 Checking Service Health (Backend & Frontend Only) ==="
                         
                         # Check if containers are running
                         echo "Current test containers:"
@@ -262,10 +319,22 @@ EOF
                             sleep 15
                         done
                         
-                        echo "📊 Analytics and Notifications services built but not health-checked (backend/frontend only)"
+                        # Check analytics and notifications containers are running (but no health check)
+                        echo "📊 Checking Analytics and Notifications containers (no health check):"
+                        if docker ps | grep -q "test-analytics"; then
+                            echo "Analytics container: ✅ RUNNING (health check skipped)"
+                        else
+                            echo "Analytics container: ❌ NOT RUNNING (but build succeeded)"
+                        fi
                         
-                        # Final status check using localhost
-                        echo "=== Final Health Check Status (via localhost) ==="
+                        if docker ps | grep -q "test-notifications"; then
+                            echo "Notifications container: ✅ RUNNING (health check skipped)"
+                        else
+                            echo "Notifications container: ❌ NOT RUNNING (but build succeeded)"
+                        fi
+                        
+                        # Final status check using localhost (backend and frontend only)
+                        echo "=== Final Health Check Status (Backend & Frontend Only) ==="
                         
                         # Check backend via localhost
                         if docker ps | grep -q "test-backend"; then
@@ -289,7 +358,7 @@ EOF
                             echo "Frontend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        echo "Analytics and Notifications: Built but not health-checked (only backend/frontend checked)"
+                        echo "Analytics and Notifications: Built and containers started (no health checks performed)"
                         
                         echo "Backend/Frontend health checks completed - Analytics/Notifications built only ✅"
                     '''
@@ -300,23 +369,63 @@ EOF
         stage('🧹 Cleanup') {
             steps {
                 sh '''
-                    echo "=== 🧹 Cleaning Up Test Containers ==="
+                    echo "=== 🧹 Cleaning Up Test Containers and Resources ==="
                     
-                    # Stop and remove test containers
-                    docker-compose -f docker-compose.test.yml down -v || true
+                    # Stop and remove containers using docker-compose if file exists
+                    if [ -f docker-compose.test.yml ]; then
+                        echo "Stopping containers via docker-compose..."
+                        docker-compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+                    fi
                     
-                    # Remove test containers specifically
-                    docker rm -f test-backend-${BUILD_NUMBER} test-frontend-${BUILD_NUMBER} || true
+                    # Remove test containers by name (more reliable)
+                    echo "🔍 Checking for test containers to remove..."
+                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+                            echo "Removing container: ${container}"
+                            docker rm -f "${container}" 2>/dev/null || true
+                        else
+                            echo "Container ${container} not found, skipping"
+                        fi
+                    done
                     
-                    # Remove test network
-                    docker network rm shopsphere-test-${BUILD_NUMBER} test-network-${BUILD_NUMBER} || true
+                    # Remove test networks gracefully
+                    echo "🔍 Checking for test networks to remove..."
+                    for network in "test-network" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
+                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
+                            echo "Removing network: ${network}"
+                            docker network rm "${network}" 2>/dev/null || true
+                        else
+                            echo "Network ${network} not found, skipping"
+                        fi
+                    done
                     
                     # Clean up test files
+                    echo "🗑️ Removing test files..."
                     rm -f docker-compose.test.yml || true
                     
-                    # Clean up docker system (but keep images)
+                    # Clean up old build images (keep only last 3 builds)
+                    echo "🗑️ Cleaning up old build images..."
+                    for service in "backend" "frontend" "analytics" "notifications"; do
+                        echo "Cleaning old shopsphere-${service} images..."
+                        # Get all images for this service, sort by created date, keep only last 3
+                        docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | \
+                        grep "^shopsphere-${service}:" | \
+                        sort -k2 -r | \
+                        tail -n +4 | \
+                        awk '{print $1}' | \
+                        while read image; do
+                            if [ ! -z "$image" ]; then
+                                echo "Removing old image: $image"
+                                docker rmi "$image" 2>/dev/null || true
+                            fi
+                        done
+                    done
+                    
+                    # Clean up docker system (but preserve current build images)
+                    echo "🧽 Cleaning up Docker system..."
                     docker container prune -f || true
                     docker volume prune -f || true
+                    docker network prune -f || true
                     
                     echo "Cleanup completed ✅"
                 '''
@@ -329,13 +438,35 @@ EOF
             script {
                 echo "=== 🧹 Final Cleanup ==="
                 sh '''
-                    # Ensure all test containers are stopped
-                    docker-compose -f docker-compose.test.yml down -v || true
-                    docker rm -f test-backend-${BUILD_NUMBER} test-frontend-${BUILD_NUMBER} || true
-                    docker network rm shopsphere-test-${BUILD_NUMBER} test-network-${BUILD_NUMBER} || true
+                    # Ensure all test containers are stopped and removed
+                    echo "🔍 Final container cleanup..."
+                    if [ -f docker-compose.test.yml ]; then
+                        docker-compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+                    fi
+                    
+                    # Remove test containers by name
+                    for container in "test-backend" "test-frontend" "test-analytics" "test-notifications"; do
+                        if docker ps -a --format "{{.Names}}" | grep -q "^${container}$" 2>/dev/null; then
+                            echo "Final removal of container: ${container}"
+                            docker rm -f "${container}" 2>/dev/null || true
+                        fi
+                    done
+                    
+                    # Remove test networks
+                    for network in "test-network" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
+                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
+                            echo "Final removal of network: ${network}"
+                            docker network rm "${network}" 2>/dev/null || true
+                        fi
+                    done
+                    
+                    # Clean up test files
                     rm -f docker-compose.test.yml || true
+                    
+                    # Final system cleanup
                     docker container prune -f || true
                     docker network prune -f || true
+                    
                     echo "Final cleanup completed ✅"
                 '''
             }
