@@ -16,8 +16,8 @@ RUN npm install --legacy-peer-deps --no-audit --no-fund \
 # Copy source code
 COPY . .
 
-# Build the application
-ENV NODE_OPTIONS="--max-old-space-size=2048"
+# Build the application with 8GB memory (successful config)
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

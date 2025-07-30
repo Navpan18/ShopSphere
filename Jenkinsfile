@@ -39,7 +39,7 @@ pipeline {
     
     options {
         buildDiscarder(logRotator(numToKeepStr: '10', daysToKeepStr: '14'))
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 45, unit: 'MINUTES')
         timestamps()
         skipDefaultCheckout(false)
     }
@@ -114,9 +114,9 @@ pipeline {
                 stage('Build Frontend') {
                     steps {
                         sh '''
-                            echo "=== 🏗️ Building Frontend ==="
+                            echo "=== 🏗️ Building Frontend with High Memory ==="
                             cd frontend
-                            docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} .
+                            docker build --memory=4g --memory-swap=8g -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} . --no-cache
                             echo "Frontend build completed ✅"
                         '''
                     }
