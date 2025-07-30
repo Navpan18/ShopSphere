@@ -1,0 +1,731 @@
+[Wed Jul 30 13:52:23 IST 2025] STARTING BUILD: 6GB memory
+[Wed Jul 30 13:52:23 IST 2025] Command: docker build --memory=6g --memory-swap=12g --shm-size=1g -t test-frontend-6gb . --no-cache --progress=plain
+========================================
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 769B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.1s
+
+#3 [internal] load .dockerignore
+#3 transferring context:
+#3 transferring context: 230B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#4 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 314.75kB 0.0s done
+#5 DONE 0.0s
+
+#6 [2/7] WORKDIR /app
+#6 DONE 0.3s
+
+#7 [3/7] RUN apk add --no-cache curl
+#7 0.176 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/APKINDEX.tar.gz
+#7 1.043 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/aarch64/APKINDEX.tar.gz
+#7 1.631 (1/9) Installing brotli-libs (1.1.0-r2)
+#7 1.835 (2/9) Installing c-ares (1.34.5-r0)
+#7 1.998 (3/9) Installing libunistring (1.2-r0)
+#7 2.495 (4/9) Installing libidn2 (2.3.7-r0)
+#7 2.676 (5/9) Installing nghttp2-libs (1.64.0-r0)
+#7 2.804 (6/9) Installing libpsl (0.21.5-r3)
+#7 2.971 (7/9) Installing zstd-libs (1.5.6-r2)
+#7 4.106 (8/9) Installing libcurl (8.12.1-r1)
+#7 4.907 (9/9) Installing curl (8.12.1-r1)
+#7 5.303 Executing busybox-1.37.0-r12.trigger
+#7 5.312 OK: 15 MiB in 26 packages
+#7 DONE 5.4s
+
+#8 [4/7] COPY package*.json ./
+#8 DONE 0.0s
+
+#9 [5/7] RUN npm install --legacy-peer-deps --no-audit --no-fund     && npm cache clean --force
+#9 2.072 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#9 3.472 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#9 3.628 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#9 4.661 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#9 7.691 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#9 8.470 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#9 39.26 
+#9 39.26 added 393 packages in 39s
+#9 39.26 npm notice
+#9 39.26 npm notice New major version of npm available! 10.8.2 -> 11.5.1
+#9 39.26 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.5.1
+#9 39.26 npm notice To update run: npm install -g npm@11.5.1
+#9 39.26 npm notice
+#9 39.36 npm warn using --force Recommended protections disabled.
+#9 DONE 40.0s
+
+#10 [6/7] COPY . .
+#10 DONE 0.2s
+
+#11 [7/7] RUN npm run build
+#11 0.209 
+#11 0.209 > frontend@0.1.0 build
+#11 0.209 > next build
+#11 0.209 
+#11 0.599   ▲ Next.js 14.2.5
+#11 0.599 
+#11 0.607    Creating an optimized production build ...
+#11 6.795  ✓ Compiled successfully
+#11 6.796    Linting and checking validity of types ...
+#11 6.850    Collecting page data ...
+#11 7.530    Generating static pages (0/13) ...
+#11 7.671    Generating static pages (3/13) 
+#11 7.673    Generating static pages (6/13) 
+#11 7.692    Generating static pages (9/13) 
+#11 7.754  ✓ Generating static pages (13/13)
+#11 7.966    Finalizing page optimization ...
+#11 7.966    Collecting build traces ...
+#11 12.61 
+#11 12.61 Route (app)                              Size     First Load JS
+#11 12.61 ┌ ○ /                                    174 B          92.4 kB
+#11 12.61 ├ ○ /_not-found                          871 B            88 kB
+#11 12.61 ├ ○ /admin/manage-products               2.43 kB         115 kB
+#11 12.61 ├ ○ /cart                                2.91 kB         120 kB
+#11 12.61 ├ ○ /checkout                            2.22 kB         115 kB
+#11 12.61 ├ ○ /login                               1.68 kB         114 kB
+#11 12.61 ├ ○ /orders                              1.5 kB          114 kB
+#11 12.61 ├ ○ /products                            2.49 kB         127 kB
+#11 12.61 ├ ○ /register                            3.07 kB         116 kB
+#11 12.61 └ ○ /success                             1.8 kB          114 kB
+#11 12.61 + First Load JS shared by all            87.1 kB
+#11 12.61   ├ chunks/23-e289a766c88793f3.js        31.5 kB
+#11 12.61   ├ chunks/fd9d1056-a8f5249c2f2f030f.js  53.6 kB
+#11 12.61   └ other shared chunks (total)          1.96 kB
+#11 12.61 
+#11 12.61 
+#11 12.61 ○  (Static)  prerendered as static content
+#11 12.61 
+#11 DONE 12.8s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 8.7s done
+#12 exporting manifest sha256:ff9aaf5b80b6d3f34647b7491c0683e3235c3ff97f2eab633b41e38c20012cae
+#12 exporting manifest sha256:ff9aaf5b80b6d3f34647b7491c0683e3235c3ff97f2eab633b41e38c20012cae done
+#12 exporting config sha256:0461c1c8c39f4b6b046ca807c7b657004bb235fe4b1c5863e78e24890f76c9b5 done
+#12 exporting attestation manifest sha256:e300f524819d09eda954a7ed54c1aecaab46915723a353c95db48fa85e14c7f9 done
+#12 exporting manifest list sha256:da6fc479fc7b59a558a6e7d75be4da8005af087cd4d7a7e7dadfdee2e8fe19bb done
+#12 naming to docker.io/library/test-frontend-6gb:latest done
+#12 unpacking to docker.io/library/test-frontend-6gb:latest
+#12 unpacking to docker.io/library/test-frontend-6gb:latest 3.3s done
+#12 DONE 12.1s
+[Wed Jul 30 13:53:35 IST 2025] ✅ SUCCESS: 6GB build completed in 72 seconds
+[Wed Jul 30 13:53:35 IST 2025] 📦 Image size: 864MB
+[Wed Jul 30 13:53:46 IST 2025] ✅ Container startup: SUCCESS
+[Wed Jul 30 13:53:46 IST 2025] ========================================
+[Wed Jul 30 13:53:56 IST 2025] STARTING BUILD: 5GB memory
+[Wed Jul 30 13:53:56 IST 2025] Command: docker build --memory=5g --memory-swap=10g --shm-size=1g -t test-frontend-5gb . --no-cache --progress=plain
+========================================
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 769B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 230B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#4 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#4 DONE 0.0s
+
+#5 [2/7] WORKDIR /app
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 8.25kB done
+#6 DONE 0.0s
+
+#7 [3/7] RUN apk add --no-cache curl
+#7 0.119 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/APKINDEX.tar.gz
+#7 0.954 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/aarch64/APKINDEX.tar.gz
+#7 2.272 (1/9) Installing brotli-libs (1.1.0-r2)
+#7 2.652 (2/9) Installing c-ares (1.34.5-r0)
+#7 2.816 (3/9) Installing libunistring (1.2-r0)
+#7 3.322 (4/9) Installing libidn2 (2.3.7-r0)
+#7 3.464 (5/9) Installing nghttp2-libs (1.64.0-r0)
+#7 3.628 (6/9) Installing libpsl (0.21.5-r3)
+#7 3.751 (7/9) Installing zstd-libs (1.5.6-r2)
+#7 4.056 (8/9) Installing libcurl (8.12.1-r1)
+#7 4.413 (9/9) Installing curl (8.12.1-r1)
+#7 4.927 Executing busybox-1.37.0-r12.trigger
+#7 4.940 OK: 15 MiB in 26 packages
+#7 DONE 5.0s
+
+#8 [4/7] COPY package*.json ./
+#8 DONE 0.0s
+
+#9 [5/7] RUN npm install --legacy-peer-deps --no-audit --no-fund     && npm cache clean --force
+#9 3.105 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#9 4.345 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#9 4.586 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#9 6.276 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#9 8.307 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#9 8.405 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#9 37.80 
+#9 37.80 added 393 packages in 38s
+#9 37.80 npm notice
+#9 37.80 npm notice New major version of npm available! 10.8.2 -> 11.5.1
+#9 37.80 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.5.1
+#9 37.80 npm notice To update run: npm install -g npm@11.5.1
+#9 37.80 npm notice
+#9 37.92 npm warn using --force Recommended protections disabled.
+#9 DONE 38.9s
+
+#10 [6/7] COPY . .
+#10 DONE 0.6s
+
+#11 [7/7] RUN npm run build
+#11 0.320 
+#11 0.320 > frontend@0.1.0 build
+#11 0.320 > next build
+#11 0.320 
+#11 1.306   ▲ Next.js 14.2.5
+#11 1.307 
+#11 1.325    Creating an optimized production build ...
+#11 9.674  ✓ Compiled successfully
+#11 9.674    Linting and checking validity of types ...
+#11 9.739    Collecting page data ...
+#11 10.53    Generating static pages (0/13) ...
+#11 10.67    Generating static pages (3/13) 
+#11 10.68    Generating static pages (6/13) 
+#11 10.73    Generating static pages (9/13) 
+#11 10.77  ✓ Generating static pages (13/13)
+#11 10.90    Finalizing page optimization ...
+#11 10.90    Collecting build traces ...
+#11 15.67 
+#11 15.67 Route (app)                              Size     First Load JS
+#11 15.67 ┌ ○ /                                    174 B          92.4 kB
+#11 15.67 ├ ○ /_not-found                          871 B            88 kB
+#11 15.67 ├ ○ /admin/manage-products               2.43 kB         115 kB
+#11 15.67 ├ ○ /cart                                2.91 kB         120 kB
+#11 15.67 ├ ○ /checkout                            2.22 kB         115 kB
+#11 15.67 ├ ○ /login                               1.68 kB         114 kB
+#11 15.67 ├ ○ /orders                              1.5 kB          114 kB
+#11 15.67 ├ ○ /products                            2.49 kB         127 kB
+#11 15.67 ├ ○ /register                            3.07 kB         116 kB
+#11 15.67 └ ○ /success                             1.8 kB          114 kB
+#11 15.67 + First Load JS shared by all            87.1 kB
+#11 15.67   ├ chunks/23-e289a766c88793f3.js        31.5 kB
+#11 15.67   ├ chunks/fd9d1056-a8f5249c2f2f030f.js  53.6 kB
+#11 15.67   └ other shared chunks (total)          1.96 kB
+#11 15.67 
+#11 15.67 
+#11 15.67 ○  (Static)  prerendered as static content
+#11 15.67 
+#11 DONE 15.8s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 9.8s done
+#12 exporting manifest sha256:37f6de5a92ad82b9564023413690debfb7cdb9baf9229a124ce3e6f84fed54a7
+#12 exporting manifest sha256:37f6de5a92ad82b9564023413690debfb7cdb9baf9229a124ce3e6f84fed54a7 done
+#12 exporting config sha256:6db867cc86e81d0a2acf02e1e8f71ca1d52d64acfe9373aa69b40d57e273f623 done
+#12 exporting attestation manifest sha256:b97a1afbc2f8d10ce493408359fbc2d54187709b58a3f419ba6b9aea5b16618e done
+#12 exporting manifest list sha256:ad7091e17f60fd58b42f662c8c3561e8d75317c8a1d7aa3d911c631031acf412 done
+#12 naming to docker.io/library/test-frontend-5gb:latest done
+#12 unpacking to docker.io/library/test-frontend-5gb:latest
+#12 unpacking to docker.io/library/test-frontend-5gb:latest 2.6s done
+#12 DONE 12.5s
+[Wed Jul 30 13:55:10 IST 2025] ✅ SUCCESS: 5GB build completed in 74 seconds
+[Wed Jul 30 13:55:10 IST 2025] 📦 Image size: 864MB
+[Wed Jul 30 13:55:21 IST 2025] ✅ Container startup: SUCCESS
+[Wed Jul 30 13:55:21 IST 2025] ========================================
+[Wed Jul 30 13:55:31 IST 2025] STARTING BUILD: 4GB memory
+[Wed Jul 30 13:55:31 IST 2025] Command: docker build --memory=4g --memory-swap=8g --shm-size=1g -t test-frontend-4gb . --no-cache --progress=plain
+========================================
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 769B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.1s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 230B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#4 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#4 DONE 0.0s
+
+#5 [2/7] WORKDIR /app
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 14.30kB done
+#6 DONE 0.0s
+
+#7 [3/7] RUN apk add --no-cache curl
+#7 0.133 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/APKINDEX.tar.gz
+#7 0.789 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/aarch64/APKINDEX.tar.gz
+#7 1.260 (1/9) Installing brotli-libs (1.1.0-r2)
+#7 1.429 (2/9) Installing c-ares (1.34.5-r0)
+#7 1.563 (3/9) Installing libunistring (1.2-r0)
+#7 1.766 (4/9) Installing libidn2 (2.3.7-r0)
+#7 2.021 (5/9) Installing nghttp2-libs (1.64.0-r0)
+#7 2.203 (6/9) Installing libpsl (0.21.5-r3)
+#7 2.389 (7/9) Installing zstd-libs (1.5.6-r2)
+#7 4.437 (8/9) Installing libcurl (8.12.1-r1)
+#7 12.11 (9/9) Installing curl (8.12.1-r1)
+#7 12.66 Executing busybox-1.37.0-r12.trigger
+#7 12.68 OK: 15 MiB in 26 packages
+#7 DONE 12.8s
+
+#8 [4/7] COPY package*.json ./
+#8 DONE 0.0s
+
+#9 [5/7] RUN npm install --legacy-peer-deps --no-audit --no-fund     && npm cache clean --force
+#9 1.676 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#9 3.277 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#9 3.807 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#9 7.645 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#9 8.346 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#9 8.469 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#9 47.13 
+#9 47.13 added 393 packages in 47s
+#9 47.14 npm notice
+#9 47.14 npm notice New major version of npm available! 10.8.2 -> 11.5.1
+#9 47.14 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.5.1
+#9 47.14 npm notice To update run: npm install -g npm@11.5.1
+#9 47.14 npm notice
+#9 47.22 npm warn using --force Recommended protections disabled.
+#9 DONE 47.6s
+
+#10 [6/7] COPY . .
+#10 DONE 0.1s
+
+#11 [7/7] RUN npm run build
+#11 0.190 
+#11 0.190 > frontend@0.1.0 build
+#11 0.190 > next build
+#11 0.190 
+#11 0.553   ▲ Next.js 14.2.5
+#11 0.553 
+#11 0.561    Creating an optimized production build ...
+#11 6.742  ✓ Compiled successfully
+#11 6.743    Linting and checking validity of types ...
+#11 6.800    Collecting page data ...
+#11 8.022    Generating static pages (0/13) ...
+#11 8.218    Generating static pages (3/13) 
+#11 8.219    Generating static pages (6/13) 
+#11 8.318    Generating static pages (9/13) 
+#11 8.388  ✓ Generating static pages (13/13)
+#11 8.678    Finalizing page optimization ...
+#11 8.678    Collecting build traces ...
+#11 14.98 
+#11 14.98 Route (app)                              Size     First Load JS
+#11 14.98 ┌ ○ /                                    174 B          92.4 kB
+#11 14.98 ├ ○ /_not-found                          871 B            88 kB
+#11 14.98 ├ ○ /admin/manage-products               2.43 kB         115 kB
+#11 14.98 ├ ○ /cart                                2.91 kB         120 kB
+#11 14.98 ├ ○ /checkout                            2.22 kB         115 kB
+#11 14.98 ├ ○ /login                               1.68 kB         114 kB
+#11 14.98 ├ ○ /orders                              1.5 kB          114 kB
+#11 14.98 ├ ○ /products                            2.49 kB         127 kB
+#11 14.98 ├ ○ /register                            3.07 kB         116 kB
+#11 14.98 └ ○ /success                             1.8 kB          114 kB
+#11 14.98 + First Load JS shared by all            87.1 kB
+#11 14.98   ├ chunks/23-e289a766c88793f3.js        31.5 kB
+#11 14.98   ├ chunks/fd9d1056-a8f5249c2f2f030f.js  53.6 kB
+#11 14.98   └ other shared chunks (total)          1.96 kB
+#11 14.98 
+#11 14.98 
+#11 14.98 ○  (Static)  prerendered as static content
+#11 14.98 
+#11 DONE 15.2s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 11.0s done
+#12 exporting manifest sha256:8d20a178676d66445cc52c6938ab9b6e833bb6920b8baadee24766ae97c76dc7 done
+#12 exporting config sha256:bd7c0b754bedf02b16aac898adc6a84ca67cf86414f0cf51f14e61a13540555b done
+#12 exporting attestation manifest sha256:129df28c7055c7417ecdfa136ff36418ae2e0f82d127a466b9a600d72da2e165 done
+#12 exporting manifest list sha256:9c36bcd9ea0eb8e65d8f7479512b94729b0cb3eecb6ad031a1bb8af9fc75699e done
+#12 naming to docker.io/library/test-frontend-4gb:latest done
+#12 unpacking to docker.io/library/test-frontend-4gb:latest
+#12 unpacking to docker.io/library/test-frontend-4gb:latest 2.3s done
+#12 DONE 13.4s
+[Wed Jul 30 13:57:01 IST 2025] ✅ SUCCESS: 4GB build completed in 90 seconds
+[Wed Jul 30 13:57:01 IST 2025] 📦 Image size: 864MB
+[Wed Jul 30 13:57:11 IST 2025] ✅ Container startup: SUCCESS
+[Wed Jul 30 13:57:11 IST 2025] ========================================
+[Wed Jul 30 13:57:21 IST 2025] STARTING BUILD: 3GB memory
+[Wed Jul 30 13:57:21 IST 2025] Command: docker build --memory=3g --memory-swap=6g --shm-size=1g -t test-frontend-3gb . --no-cache --progress=plain
+========================================
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 769B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 230B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#4 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#4 DONE 0.0s
+
+#5 [2/7] WORKDIR /app
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 20.03kB done
+#6 DONE 0.0s
+
+#7 [3/7] RUN apk add --no-cache curl
+#7 0.126 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/APKINDEX.tar.gz
+#7 0.859 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/aarch64/APKINDEX.tar.gz
+#7 1.399 (1/9) Installing brotli-libs (1.1.0-r2)
+#7 1.594 (2/9) Installing c-ares (1.34.5-r0)
+#7 1.713 (3/9) Installing libunistring (1.2-r0)
+#7 1.899 (4/9) Installing libidn2 (2.3.7-r0)
+#7 2.060 (5/9) Installing nghttp2-libs (1.64.0-r0)
+#7 2.178 (6/9) Installing libpsl (0.21.5-r3)
+#7 2.294 (7/9) Installing zstd-libs (1.5.6-r2)
+#7 2.455 (8/9) Installing libcurl (8.12.1-r1)
+#7 2.688 (9/9) Installing curl (8.12.1-r1)
+#7 2.847 Executing busybox-1.37.0-r12.trigger
+#7 2.854 OK: 15 MiB in 26 packages
+#7 DONE 2.9s
+
+#8 [4/7] COPY package*.json ./
+#8 DONE 0.0s
+
+#9 [5/7] RUN npm install --legacy-peer-deps --no-audit --no-fund     && npm cache clean --force
+#9 1.863 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#9 3.309 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#9 4.229 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#9 7.248 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#9 7.480 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#9 9.924 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#9 36.55 
+#9 36.55 added 393 packages in 36s
+#9 36.55 npm notice
+#9 36.55 npm notice New major version of npm available! 10.8.2 -> 11.5.1
+#9 36.55 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.5.1
+#9 36.55 npm notice To update run: npm install -g npm@11.5.1
+#9 36.55 npm notice
+#9 36.63 npm warn using --force Recommended protections disabled.
+#9 DONE 36.9s
+
+#10 [6/7] COPY . .
+#10 DONE 0.1s
+
+#11 [7/7] RUN npm run build
+#11 0.174 
+#11 0.174 > frontend@0.1.0 build
+#11 0.174 > next build
+#11 0.174 
+#11 0.519   ▲ Next.js 14.2.5
+#11 0.519 
+#11 0.527    Creating an optimized production build ...
+#11 6.368  ✓ Compiled successfully
+#11 6.369    Linting and checking validity of types ...
+#11 6.424    Collecting page data ...
+#11 7.114    Generating static pages (0/13) ...
+#11 7.270    Generating static pages (3/13) 
+#11 7.284    Generating static pages (6/13) 
+#11 7.291    Generating static pages (9/13) 
+#11 7.352  ✓ Generating static pages (13/13)
+#11 7.599    Finalizing page optimization ...
+#11 7.599    Collecting build traces ...
+#11 12.71 
+#11 12.72 Route (app)                              Size     First Load JS
+#11 12.72 ┌ ○ /                                    174 B          92.4 kB
+#11 12.72 ├ ○ /_not-found                          871 B            88 kB
+#11 12.72 ├ ○ /admin/manage-products               2.43 kB         115 kB
+#11 12.72 ├ ○ /cart                                2.91 kB         120 kB
+#11 12.72 ├ ○ /checkout                            2.22 kB         115 kB
+#11 12.72 ├ ○ /login                               1.68 kB         114 kB
+#11 12.72 ├ ○ /orders                              1.5 kB          114 kB
+#11 12.72 ├ ○ /products                            2.49 kB         127 kB
+#11 12.72 ├ ○ /register                            3.07 kB         116 kB
+#11 12.72 └ ○ /success                             1.8 kB          114 kB
+#11 12.72 + First Load JS shared by all            87.1 kB
+#11 12.72   ├ chunks/23-e289a766c88793f3.js        31.5 kB
+#11 12.72   ├ chunks/fd9d1056-a8f5249c2f2f030f.js  53.6 kB
+#11 12.72   └ other shared chunks (total)          1.96 kB
+#11 12.72 
+#11 12.72 
+#11 12.72 ○  (Static)  prerendered as static content
+#11 12.72 
+#11 DONE 12.9s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 10.8s done
+#12 exporting manifest sha256:bd0e67d236c621e44d3fe238cea39b03a44eb89806f9f346304fee6487a6638a done
+#12 exporting config sha256:6302e753e28137315aef0b73c70772ec09db11759ec1407782c4aa86a5e23232 done
+#12 exporting attestation manifest sha256:9898e94309950f5a32f60c026653fb90a5de5aef7e6e4cb1e1177ab9da92b3bf done
+#12 exporting manifest list sha256:17498b6a988d8b48b3b68cb088be969d4c3456009d211a8f50b27b5323f5fe64 done
+#12 naming to docker.io/library/test-frontend-3gb:latest done
+#12 unpacking to docker.io/library/test-frontend-3gb:latest
+#12 unpacking to docker.io/library/test-frontend-3gb:latest 2.5s done
+#12 DONE 13.3s
+[Wed Jul 30 13:58:28 IST 2025] ✅ SUCCESS: 3GB build completed in 67 seconds
+[Wed Jul 30 13:58:28 IST 2025] 📦 Image size: 864MB
+[Wed Jul 30 13:58:39 IST 2025] ✅ Container startup: SUCCESS
+[Wed Jul 30 13:58:39 IST 2025] ========================================
+[Wed Jul 30 13:58:49 IST 2025] STARTING BUILD: 2GB memory
+[Wed Jul 30 13:58:49 IST 2025] Command: docker build --memory=2g --memory-swap=4g --shm-size=1g -t test-frontend-2gb . --no-cache --progress=plain
+========================================
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 769B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 230B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#4 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#4 DONE 0.0s
+
+#5 [2/7] WORKDIR /app
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 25.87kB done
+#6 DONE 0.0s
+
+#7 [3/7] RUN apk add --no-cache curl
+#7 0.108 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/APKINDEX.tar.gz
+#7 1.018 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/aarch64/APKINDEX.tar.gz
+#7 1.839 (1/9) Installing brotli-libs (1.1.0-r2)
+#7 2.041 (2/9) Installing c-ares (1.34.5-r0)
+#7 2.255 (3/9) Installing libunistring (1.2-r0)
+#7 3.238 (4/9) Installing libidn2 (2.3.7-r0)
+#7 3.400 (5/9) Installing nghttp2-libs (1.64.0-r0)
+#7 3.525 (6/9) Installing libpsl (0.21.5-r3)
+#7 3.733 (7/9) Installing zstd-libs (1.5.6-r2)
+#7 4.402 (8/9) Installing libcurl (8.12.1-r1)
+#7 4.918 (9/9) Installing curl (8.12.1-r1)
+#7 5.201 Executing busybox-1.37.0-r12.trigger
+#7 5.210 OK: 15 MiB in 26 packages
+#7 DONE 5.3s
+
+#8 [4/7] COPY package*.json ./
+#8 DONE 0.0s
+
+#9 [5/7] RUN npm install --legacy-peer-deps --no-audit --no-fund     && npm cache clean --force
+#9 1.894 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#9 3.639 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#9 3.866 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#9 8.025 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#9 8.145 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#9 8.998 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#9 40.61 
+#9 40.61 added 393 packages in 40s
+#9 40.61 npm notice
+#9 40.61 npm notice New major version of npm available! 10.8.2 -> 11.5.1
+#9 40.61 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.5.1
+#9 40.61 npm notice To update run: npm install -g npm@11.5.1
+#9 40.61 npm notice
+#9 40.71 npm warn using --force Recommended protections disabled.
+#9 DONE 41.2s
+
+#10 [6/7] COPY . .
+#10 DONE 0.1s
+
+#11 [7/7] RUN npm run build
+#11 0.186 
+#11 0.186 > frontend@0.1.0 build
+#11 0.186 > next build
+#11 0.186 
+#11 0.584   ▲ Next.js 14.2.5
+#11 0.584 
+#11 0.592    Creating an optimized production build ...
+#11 7.602  ✓ Compiled successfully
+#11 7.604    Linting and checking validity of types ...
+#11 7.688    Collecting page data ...
+#11 8.473    Generating static pages (0/13) ...
+#11 8.689    Generating static pages (3/13) 
+#11 8.689    Generating static pages (6/13) 
+#11 8.711    Generating static pages (9/13) 
+#11 8.760  ✓ Generating static pages (13/13)
+#11 8.990    Finalizing page optimization ...
+#11 8.990    Collecting build traces ...
+#11 13.56 
+#11 13.56 Route (app)                              Size     First Load JS
+#11 13.56 ┌ ○ /                                    174 B          92.4 kB
+#11 13.56 ├ ○ /_not-found                          871 B            88 kB
+#11 13.56 ├ ○ /admin/manage-products               2.43 kB         115 kB
+#11 13.56 ├ ○ /cart                                2.91 kB         120 kB
+#11 13.56 ├ ○ /checkout                            2.22 kB         115 kB
+#11 13.56 ├ ○ /login                               1.68 kB         114 kB
+#11 13.56 ├ ○ /orders                              1.5 kB          114 kB
+#11 13.56 ├ ○ /products                            2.49 kB         127 kB
+#11 13.56 ├ ○ /register                            3.07 kB         116 kB
+#11 13.56 └ ○ /success                             1.8 kB          114 kB
+#11 13.56 + First Load JS shared by all            87.1 kB
+#11 13.56   ├ chunks/23-e289a766c88793f3.js        31.5 kB
+#11 13.56   ├ chunks/fd9d1056-a8f5249c2f2f030f.js  53.6 kB
+#11 13.56   └ other shared chunks (total)          1.96 kB
+#11 13.56 
+#11 13.56 
+#11 13.56 ○  (Static)  prerendered as static content
+#11 13.56 
+#11 DONE 13.7s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 10.2s done
+#12 exporting manifest sha256:82639fd374f193b83ad93c71b555750c6bd2efaa2927c7aa4feebd5d9bbecf04
+#12 exporting manifest sha256:82639fd374f193b83ad93c71b555750c6bd2efaa2927c7aa4feebd5d9bbecf04 done
+#12 exporting config sha256:bd060b5982e77ee1c8039741324d47909c4af06b7b282e967571e9e9617e303e done
+#12 exporting attestation manifest sha256:7b2389e383850c05df2403a3593426dfb5cdedc089c49cd4a75790739b7a7300 done
+#12 exporting manifest list sha256:fbceb0b31dc4fa44faf2cd77119a358db76e23bf63c305508508b7e20d021cf2 done
+#12 naming to docker.io/library/test-frontend-2gb:latest done
+#12 unpacking to docker.io/library/test-frontend-2gb:latest
+#12 unpacking to docker.io/library/test-frontend-2gb:latest 2.7s done
+#12 DONE 13.0s
+[Wed Jul 30 14:00:03 IST 2025] ✅ SUCCESS: 2GB build completed in 74 seconds
+[Wed Jul 30 14:00:03 IST 2025] 📦 Image size: 864MB
+[Wed Jul 30 14:00:14 IST 2025] ✅ Container startup: SUCCESS
+[Wed Jul 30 14:00:14 IST 2025] ========================================
+[Wed Jul 30 14:00:24 IST 2025] STARTING BUILD: 1GB memory
+[Wed Jul 30 14:00:24 IST 2025] Command: docker build --memory=1g --memory-swap=2g --shm-size=1g -t test-frontend-1gb . --no-cache --progress=plain
+========================================
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 769B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.1s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 230B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#4 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#4 DONE 0.0s
+
+#5 [2/7] WORKDIR /app
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 32.14kB done
+#6 DONE 0.0s
+
+#7 [3/7] RUN apk add --no-cache curl
+#7 0.129 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/aarch64/APKINDEX.tar.gz
+#7 1.161 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/aarch64/APKINDEX.tar.gz
+#7 1.907 (1/9) Installing brotli-libs (1.1.0-r2)
+#7 2.144 (2/9) Installing c-ares (1.34.5-r0)
+#7 2.315 (3/9) Installing libunistring (1.2-r0)
+#7 2.778 (4/9) Installing libidn2 (2.3.7-r0)
+#7 2.950 (5/9) Installing nghttp2-libs (1.64.0-r0)
+#7 3.110 (6/9) Installing libpsl (0.21.5-r3)
+#7 3.514 (7/9) Installing zstd-libs (1.5.6-r2)
+#7 4.432 (8/9) Installing libcurl (8.12.1-r1)
+#7 5.174 (9/9) Installing curl (8.12.1-r1)
+#7 5.558 Executing busybox-1.37.0-r12.trigger
+#7 5.570 OK: 15 MiB in 26 packages
+#7 DONE 5.6s
+
+#8 [4/7] COPY package*.json ./
+#8 DONE 0.0s
+
+#9 [5/7] RUN npm install --legacy-peer-deps --no-audit --no-fund     && npm cache clean --force
+#9 2.142 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+#9 2.984 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#9 3.551 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#9 6.613 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+#9 6.776 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+#9 8.181 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+#9 30.03 
+#9 30.03 added 393 packages in 30s
+#9 30.03 npm notice
+#9 30.03 npm notice New major version of npm available! 10.8.2 -> 11.5.1
+#9 30.03 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.5.1
+#9 30.03 npm notice To update run: npm install -g npm@11.5.1
+#9 30.03 npm notice
+#9 30.12 npm warn using --force Recommended protections disabled.
+#9 DONE 30.7s
+
+#10 [6/7] COPY . .
+#10 DONE 0.1s
+
+#11 [7/7] RUN npm run build
+#11 0.257 
+#11 0.257 > frontend@0.1.0 build
+#11 0.257 > next build
+#11 0.257 
+#11 0.660   ▲ Next.js 14.2.5
+#11 0.661 
+#11 0.668    Creating an optimized production build ...
+#11 7.254  ✓ Compiled successfully
+#11 7.254    Linting and checking validity of types ...
+#11 7.321    Collecting page data ...
+#11 8.004    Generating static pages (0/13) ...
+#11 8.156    Generating static pages (3/13) 
+#11 8.165    Generating static pages (6/13) 
+#11 8.183    Generating static pages (9/13) 
+#11 8.227  ✓ Generating static pages (13/13)
+#11 8.482    Finalizing page optimization ...
+#11 8.483    Collecting build traces ...
+#11 13.24 
+#11 13.24 Route (app)                              Size     First Load JS
+#11 13.24 ┌ ○ /                                    174 B          92.4 kB
+#11 13.24 ├ ○ /_not-found                          871 B            88 kB
+#11 13.24 ├ ○ /admin/manage-products               2.43 kB         115 kB
+#11 13.24 ├ ○ /cart                                2.91 kB         120 kB
+#11 13.24 ├ ○ /checkout                            2.22 kB         115 kB
+#11 13.24 ├ ○ /login                               1.68 kB         114 kB
+#11 13.24 ├ ○ /orders                              1.5 kB          114 kB
+#11 13.24 ├ ○ /products                            2.49 kB         127 kB
+#11 13.24 ├ ○ /register                            3.07 kB         116 kB
+#11 13.24 └ ○ /success                             1.8 kB          114 kB
+#11 13.24 + First Load JS shared by all            87.1 kB
+#11 13.24   ├ chunks/23-e289a766c88793f3.js        31.5 kB
+#11 13.24   ├ chunks/fd9d1056-a8f5249c2f2f030f.js  53.6 kB
+#11 13.24   └ other shared chunks (total)          1.96 kB
+#11 13.24 
+#11 13.24 
+#11 13.24 ○  (Static)  prerendered as static content
+#11 13.24 
+#11 DONE 13.4s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 10.6s done
+#12 exporting manifest sha256:19a6fa3fbd552eff29b8446c066092d8238c728cc7ee7a5f83f12230fb002550
+#12 exporting manifest sha256:19a6fa3fbd552eff29b8446c066092d8238c728cc7ee7a5f83f12230fb002550 done
+#12 exporting config sha256:406e8aeaae9e2798139994b0ccf15f57e03abfcc35bd8972f8b55342b8ecfcea done
+#12 exporting attestation manifest sha256:8c39b8e20adb7de7224fcdcc23770843b60c619731826f62db668195d8c46633 done
+#12 exporting manifest list sha256:820b43044289ae737b39474c417b72ceda280ce8163451819d56b7956e5320ff done
+#12 naming to docker.io/library/test-frontend-1gb:latest done
+#12 unpacking to docker.io/library/test-frontend-1gb:latest
+#12 unpacking to docker.io/library/test-frontend-1gb:latest 3.0s done
+#12 DONE 13.7s
+[Wed Jul 30 14:01:29 IST 2025] ✅ SUCCESS: 1GB build completed in 65 seconds
+[Wed Jul 30 14:01:29 IST 2025] 📦 Image size: 864MB
+[Wed Jul 30 14:01:39 IST 2025] ✅ Container startup: SUCCESS
+[Wed Jul 30 14:01:40 IST 2025] ========================================

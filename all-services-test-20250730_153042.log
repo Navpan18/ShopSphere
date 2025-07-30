@@ -1,0 +1,40 @@
+9edb0c6269dbdb6819a00ea150b855913b3308b02a1d307e9f73096175ffe5d3
+docker: Error response from daemon: failed to set up container networking: network test-network not found
+
+Run 'docker run --help' for more information
+[Wed Jul 30 15:38:13 IST 2025] ✅ backend: Container started on port 8011
+98985170a88289217e3cdaeea274be2fb45dae5e29b439b69326c53d9503be46
+docker: Error response from daemon: failed to set up container networking: network test-network not found
+
+Run 'docker run --help' for more information
+[Wed Jul 30 15:38:13 IST 2025] ✅ frontend: Container started on port 3010
+9bc5264bdc43280b98915bb3d6b34a4e3194816a93d2a6a3c4283b54559d28d4
+docker: Error response from daemon: failed to set up container networking: network test-network not found
+
+Run 'docker run --help' for more information
+[Wed Jul 30 15:38:13 IST 2025] ✅ analytics: Container started on port 8012
+5131350da27b6b02c74cd35a8539b6f726d308c400b1fdc4c5b3aea067d18114
+docker: Error response from daemon: failed to set up container networking: network test-network not found
+
+Run 'docker run --help' for more information
+[Wed Jul 30 15:38:13 IST 2025] ✅ notifications: Container started on port 8013
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to localhost port 8011 after 0 ms: Couldn't connect to server
+[Wed Jul 30 15:38:43 IST 2025] ✅ Backend: Health check passed (localhost:8011)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to localhost port 3010 after 0 ms: Couldn't connect to server
+[Wed Jul 30 15:38:43 IST 2025] ✅ Frontend: Health check passed (localhost:3010)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to localhost port 8012 after 0 ms: Couldn't connect to server
+[Wed Jul 30 15:38:43 IST 2025] ✅ Analytics: Health check passed (localhost:8012)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to localhost port 8013 after 0 ms: Couldn't connect to server
+[Wed Jul 30 15:38:43 IST 2025] ✅ Notifications: Health check passed (localhost:8013)

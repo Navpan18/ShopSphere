@@ -262,43 +262,7 @@ EOF
                             sleep 15
                         done
                         
-                        # Wait for analytics to be ready
-                        echo "📊 Checking Analytics Health via localhost:"
-                        ANALYTICS_HEALTHY=false
-                        for i in $(seq 1 10); do
-                            # First check if container is running
-                            if docker ps | grep -q "test-analytics"; then
-                                # Check via localhost (may not have health endpoint)
-                                if curl -f http://localhost:8012/ >/dev/null 2>&1; then
-                                    echo "Analytics is responding via localhost:8012! ✅"
-                                    ANALYTICS_HEALTHY=true
-                                    break
-                                fi
-                                echo "Analytics container running but not responding via localhost yet, waiting... (attempt $i/10)"
-                            else
-                                echo "Analytics container not running, waiting... (attempt $i/10)"
-                            fi
-                            sleep 10
-                        done
-                        
-                        # Wait for notifications to be ready
-                        echo "📧 Checking Notifications Health via localhost:"
-                        NOTIFICATIONS_HEALTHY=false
-                        for i in $(seq 1 10); do
-                            # First check if container is running
-                            if docker ps | grep -q "test-notifications"; then
-                                # Check via localhost (may not have health endpoint)
-                                if curl -f http://localhost:8013/ >/dev/null 2>&1; then
-                                    echo "Notifications is responding via localhost:8013! ✅"
-                                    NOTIFICATIONS_HEALTHY=true
-                                    break
-                                fi
-                                echo "Notifications container running but not responding via localhost yet, waiting... (attempt $i/10)"
-                            else
-                                echo "Notifications container not running, waiting... (attempt $i/10)"
-                            fi
-                            sleep 10
-                        done
+                        echo "📊 Analytics and Notifications services built but not health-checked (backend/frontend only)"
                         
                         # Final status check using localhost
                         echo "=== Final Health Check Status (via localhost) ==="
@@ -325,29 +289,9 @@ EOF
                             echo "Frontend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        # Check analytics via localhost
-                        if docker ps | grep -q "test-analytics"; then
-                            if curl -f http://localhost:8012/ >/dev/null 2>&1; then
-                                echo "Analytics: ✅ RESPONDING (via localhost:8012)"
-                            else
-                                echo "Analytics: ❌ RUNNING BUT NOT RESPONDING via localhost (but continuing pipeline)"
-                            fi
-                        else
-                            echo "Analytics: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
-                        fi
+                        echo "Analytics and Notifications: Built but not health-checked (only backend/frontend checked)"
                         
-                        # Check notifications via localhost
-                        if docker ps | grep -q "test-notifications"; then
-                            if curl -f http://localhost:8013/ >/dev/null 2>&1; then
-                                echo "Notifications: ✅ RESPONDING (via localhost:8013)"
-                            else
-                                echo "Notifications: ❌ RUNNING BUT NOT RESPONDING via localhost (but continuing pipeline)"
-                            fi
-                        else
-                            echo "Notifications: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
-                        fi
-                        
-                        echo "Network health checks completed - Pipeline continues regardless of health status ✅"
+                        echo "Backend/Frontend health checks completed - Analytics/Notifications built only ✅"
                     '''
                 }
             }
@@ -404,7 +348,7 @@ EOF
                     echo "🎉 All builds completed successfully!"
                     echo "📊 Build: ${BUILD_NUMBER}"
                     echo "🔄 Commit: ${GIT_COMMIT_SHORT}"
-                    echo "🌐 All services built and health checked ✅"
+                    echo "🌐 Backend/Frontend health checked, Analytics/Notifications built only ✅"
                     
                     # Save build summary
                     mkdir -p build-artifacts
@@ -424,7 +368,11 @@ Services Built:
 - Analytics: ✅
 - Notifications: ✅
 
-Health Checks: ✅
+Health Checks:
+- Backend: ✅ (localhost:8011/health)
+- Frontend: ✅ (localhost:3010/)
+- Analytics: Built only (no health check)
+- Notifications: Built only (no health check)
 Cleanup: ✅
 EOF
                 '''

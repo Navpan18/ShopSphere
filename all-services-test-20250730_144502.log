@@ -1,0 +1,11 @@
+d885b1d0034cd34ee4e23d3df63435fc3c04855a7727f2c80166a3952495a737
+[Wed Jul 30 14:45:58 IST 2025] ✅ backend: Container started on port 8011
+Unable to find image 'test-frontend:latest' locally
+docker: Error response from daemon: pull access denied for test-frontend, repository does not exist or may require 'docker login'
+
+Run 'docker run --help' for more information
+[Wed Jul 30 14:46:01 IST 2025] ✅ frontend: Container started on port 3010
+Unable to find image 'test-analytics:latest' locally
+[Wed Jul 30 14:46:03 IST 2025] ❌ analytics: Container startup failed
+Unable to find image 'test-notifications:latest' locally
+[Wed Jul 30 14:46:04 IST 2025] ❌ notifications: Container startup failed
