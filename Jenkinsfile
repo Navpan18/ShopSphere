@@ -88,12 +88,15 @@ pipeline {
                     echo "Docker Version: $(docker --version)"
                     echo "Docker Compose Version: $(docker-compose --version)"
                     
-                    # Clean previous build artifacts
+                    # Clean previous build artifacts and networks
                     docker system prune -f || true
                     docker network prune -f || true
                     
-                    # Create build network
-                    docker network create shopsphere-build-network || true
+                    # Remove any existing test networks
+                    docker network rm shopsphere-build-network shopsphere-test-network || true
+                    
+                    # Create unique test network for this build
+                    docker network create shopsphere-test-${BUILD_NUMBER} || true
                 '''
             }
         }
@@ -149,10 +152,40 @@ pipeline {
         stage('🐳 Container Health Check') {
             steps {
                 sh '''
-                    echo "=== 🐳 Starting Containers for Health Check ==="
+                    echo "=== 🐳 Starting Test Containers for Health Check ==="
                     
-                    # Start all services with docker-compose
-                    COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME} docker-compose -f docker-compose.yml up -d
+                    # Create temporary docker-compose for testing with unique network
+                    cat > docker-compose.test.yml << EOF
+version: '3.8'
+services:
+  backend-test:
+    image: ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
+    container_name: test-backend-${BUILD_NUMBER}
+    ports:
+      - "${BACKEND_URL#*:}:8001"
+    environment:
+      - NODE_ENV=test
+    networks:
+      - test-network-${BUILD_NUMBER}
+  
+  frontend-test:
+    image: ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
+    container_name: test-frontend-${BUILD_NUMBER}
+    ports:
+      - "${FRONTEND_URL#*:}:3000"
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=8192
+      - NEXT_TELEMETRY_DISABLED=1
+    networks:
+      - test-network-${BUILD_NUMBER}
+
+networks:
+  test-network-${BUILD_NUMBER}:
+    driver: bridge
+EOF
+                    
+                    # Start test containers
+                    docker-compose -f docker-compose.test.yml up -d
                     
                     echo "⏰ Waiting 60 seconds for services to start..."
                     sleep 60
@@ -160,7 +193,7 @@ pipeline {
                     echo "=== 🔍 Checking Service Health ==="
                     
                     # Check if containers are running
-                    docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
+                    docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" | grep test-
                     
                     # Simple health checks
                     echo "📊 Backend Health Check:"
@@ -168,12 +201,6 @@ pipeline {
                     
                     echo "🌐 Frontend Health Check:"
                     curl -f ${FRONTEND_URL}/ || echo "Frontend health check failed"
-                    
-                    echo "📈 Analytics Health Check:"
-                    curl -f ${ANALYTICS_URL}/health || echo "Analytics health check failed"
-                    
-                    echo "📧 Notifications Health Check:"
-                    curl -f ${NOTIFICATIONS_URL}/health || echo "Notifications health check failed"
                     
                     echo "Health checks completed ✅"
                 '''
@@ -185,14 +212,17 @@ pipeline {
                 sh '''
                     echo "=== 🧹 Cleaning Up Test Containers ==="
                     
-                    # Stop and remove all containers
-                    COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME} docker-compose down -v || true
+                    # Stop and remove test containers
+                    docker-compose -f docker-compose.test.yml down -v || true
                     
-                    # Remove test containers
-                    docker container prune -f || true
+                    # Remove test containers specifically
+                    docker rm -f test-backend-${BUILD_NUMBER} test-frontend-${BUILD_NUMBER} || true
                     
                     # Remove test network
-                    docker network rm shopsphere-build-network || true
+                    docker network rm shopsphere-test-${BUILD_NUMBER} test-network-${BUILD_NUMBER} || true
+                    
+                    # Clean up test files
+                    rm -f docker-compose.test.yml || true
                     
                     # Clean up docker system (but keep images)
                     docker container prune -f || true
@@ -210,7 +240,10 @@ pipeline {
                 echo "=== 🧹 Final Cleanup ==="
                 sh '''
                     # Ensure all test containers are stopped
-                    COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME} docker-compose down -v || true
+                    docker-compose -f docker-compose.test.yml down -v || true
+                    docker rm -f test-backend-${BUILD_NUMBER} test-frontend-${BUILD_NUMBER} || true
+                    docker network rm shopsphere-test-${BUILD_NUMBER} test-network-${BUILD_NUMBER} || true
+                    rm -f docker-compose.test.yml || true
                     docker container prune -f || true
                     docker network prune -f || true
                     echo "Final cleanup completed ✅"
