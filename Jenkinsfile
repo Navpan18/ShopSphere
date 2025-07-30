@@ -198,7 +198,7 @@ EOF
                         
                         # Wait for backend to be ready (faster startup)
                         echo "📊 Checking Backend Health:"
-                        for i in {1..10}; do
+                        for i in $(seq 1 10); do
                             if curl -f http://localhost:8011/health >/dev/null 2>&1; then
                                 echo "Backend is healthy! ✅"
                                 break
@@ -209,7 +209,7 @@ EOF
                         
                         # Wait for frontend to be ready (slower startup)
                         echo "🌐 Checking Frontend Health (allowing more time for Next.js):"
-                        for i in {1..20}; do
+                        for i in $(seq 1 20); do
                             if curl -f http://localhost:3010/ >/dev/null 2>&1; then
                                 echo "Frontend is healthy! ✅"
                                 break
