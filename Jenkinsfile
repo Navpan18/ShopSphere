@@ -188,20 +188,40 @@ EOF
                         # Start test containers
                         docker-compose -f docker-compose.test.yml up -d
                         
-                        echo "⏰ Waiting 60 seconds for services to start..."
-                        sleep 60
+                        echo "⏰ Waiting 30 seconds for containers to initialize..."
+                        sleep 30
                         
                         echo "=== 🔍 Checking Service Health ==="
                         
                         # Check if containers are running
                         docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" | grep test-
                         
-                        # Simple health checks with correct URLs
-                        echo "📊 Backend Health Check:"
-                        curl -f http://localhost:8011/health || echo "Backend health check failed"
+                        # Wait for backend to be ready (faster startup)
+                        echo "📊 Checking Backend Health:"
+                        for i in {1..10}; do
+                            if curl -f http://localhost:8011/health >/dev/null 2>&1; then
+                                echo "Backend is healthy! ✅"
+                                break
+                            fi
+                            echo "Backend not ready yet, waiting... (attempt $i/10)"
+                            sleep 10
+                        done
                         
-                        echo "🌐 Frontend Health Check:"
-                        curl -f http://localhost:3010/ || echo "Frontend health check failed"
+                        # Wait for frontend to be ready (slower startup)
+                        echo "🌐 Checking Frontend Health (allowing more time for Next.js):"
+                        for i in {1..20}; do
+                            if curl -f http://localhost:3010/ >/dev/null 2>&1; then
+                                echo "Frontend is healthy! ✅"
+                                break
+                            fi
+                            echo "Frontend not ready yet, waiting... (attempt $i/20)"
+                            sleep 15
+                        done
+                        
+                        # Final status check
+                        echo "=== Final Health Check Status ==="
+                        curl -f http://localhost:8011/health && echo "Backend: ✅ HEALTHY" || echo "Backend: ❌ UNHEALTHY"
+                        curl -f http://localhost:3010/ && echo "Frontend: ✅ HEALTHY" || echo "Frontend: ❌ UNHEALTHY"
                         
                         echo "Health checks completed ✅"
                     '''
