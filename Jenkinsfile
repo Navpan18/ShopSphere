@@ -151,15 +151,16 @@ pipeline {
         
         stage('🐳 Container Health Check') {
             steps {
-                sh '''
-                    echo "=== 🐳 Starting Test Containers for Health Check ==="
-                    
-                    # Create temporary docker-compose for testing with unique network
-                    cat > docker-compose.test.yml << EOF
+                script {
+                    sh '''
+                        echo "=== 🐳 Starting Test Containers for Health Check ==="
+                        
+                        # Create temporary docker-compose for testing with unique network
+                        cat > docker-compose.test.yml << EOF
 version: '3.8'
 services:
   backend-test:
-    image: ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
+    image: shopsphere-backend:${BUILD_NUMBER}
     container_name: test-backend-${BUILD_NUMBER}
     ports:
       - "8011:8001"
@@ -169,7 +170,7 @@ services:
       - test-network-${BUILD_NUMBER}
   
   frontend-test:
-    image: ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
+    image: shopsphere-frontend:${BUILD_NUMBER}
     container_name: test-frontend-${BUILD_NUMBER}
     ports:
       - "3010:3000"
@@ -183,27 +184,28 @@ networks:
   test-network-${BUILD_NUMBER}:
     driver: bridge
 EOF
-                    
-                    # Start test containers
-                    docker-compose -f docker-compose.test.yml up -d
-                    
-                    echo "⏰ Waiting 60 seconds for services to start..."
-                    sleep 60
-                    
-                    echo "=== 🔍 Checking Service Health ==="
-                    
-                    # Check if containers are running
-                    docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" | grep test-
-                    
-                    # Simple health checks
-                    echo "📊 Backend Health Check:"
-                    curl -f ${BACKEND_URL}/health || echo "Backend health check failed"
-                    
-                    echo "🌐 Frontend Health Check:"
-                    curl -f ${FRONTEND_URL}/ || echo "Frontend health check failed"
-                    
-                    echo "Health checks completed ✅"
-                '''
+                        
+                        # Start test containers
+                        docker-compose -f docker-compose.test.yml up -d
+                        
+                        echo "⏰ Waiting 60 seconds for services to start..."
+                        sleep 60
+                        
+                        echo "=== 🔍 Checking Service Health ==="
+                        
+                        # Check if containers are running
+                        docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" | grep test-
+                        
+                        # Simple health checks with correct URLs
+                        echo "📊 Backend Health Check:"
+                        curl -f http://localhost:8011/health || echo "Backend health check failed"
+                        
+                        echo "🌐 Frontend Health Check:"
+                        curl -f http://localhost:3010/ || echo "Frontend health check failed"
+                        
+                        echo "Health checks completed ✅"
+                    '''
+                }
             }
         }
         
@@ -262,13 +264,14 @@ EOF
                     
                     # Save build summary
                     mkdir -p build-artifacts
+                    BRANCH_NAME="${BRANCH_NAME:-main}"
                     cat > build-artifacts/build-success.txt << EOF
 ShopSphere Build Summary
 =======================
 ✅ Status: SUCCESS
 🏗️ Build: ${BUILD_NUMBER}
 🔄 Commit: ${GIT_COMMIT_SHORT}
-🌿 Branch: ${env.BRANCH_NAME ?: 'main'}
+🌿 Branch: ${BRANCH_NAME}
 ⏱️ Completed: $(date)
 
 Services Built:
@@ -294,13 +297,14 @@ EOF
                     
                     # Save failure details
                     mkdir -p build-artifacts
+                    BRANCH_NAME="${BRANCH_NAME:-main}"
                     cat > build-artifacts/build-failure.txt << EOF
 ShopSphere Build Failure
 ========================
 ❌ Status: FAILED
 🏗️ Build: ${BUILD_NUMBER}
 🔄 Commit: ${GIT_COMMIT_SHORT}
-🌿 Branch: ${env.BRANCH_NAME ?: 'main'}
+🌿 Branch: ${BRANCH_NAME}
 ⏱️ Failed: $(date)
 EOF
                 '''
