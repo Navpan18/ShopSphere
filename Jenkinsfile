@@ -162,7 +162,7 @@ services:
     image: ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}
     container_name: test-backend-${BUILD_NUMBER}
     ports:
-      - "${BACKEND_URL#*:}:8001"
+      - "8011:8001"
     environment:
       - NODE_ENV=test
     networks:
@@ -172,7 +172,7 @@ services:
     image: ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}
     container_name: test-frontend-${BUILD_NUMBER}
     ports:
-      - "${FRONTEND_URL#*:}:3000"
+      - "3010:3000"
     environment:
       - NODE_OPTIONS=--max-old-space-size=8192
       - NEXT_TELEMETRY_DISABLED=1
