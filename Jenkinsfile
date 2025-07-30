@@ -216,14 +216,12 @@ services:
   backend-test:
     image: shopsphere-backend:${BUILD_NUMBER}
     container_name: test-backend-${BUILD_NUMBER}
-    ports:
-      - "8011:8001"
+    network_mode: host
     environment:
       - NODE_ENV=test
-    networks:
-      - test-network-${BUILD_NUMBER}
+      - PORT=8011
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -231,15 +229,13 @@ services:
   frontend-test:
     image: shopsphere-frontend:${BUILD_NUMBER}
     container_name: test-frontend-${BUILD_NUMBER}
-    ports:
-      - "3010:3000"
+    network_mode: host
     environment:
       - NODE_OPTIONS=--max-old-space-size=8192
       - NEXT_TELEMETRY_DISABLED=1
-    networks:
-      - test-network-${BUILD_NUMBER}
+      - PORT=3010
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:3010/"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -247,34 +243,22 @@ services:
   analytics-test:
     image: shopsphere-analytics:${BUILD_NUMBER}
     container_name: test-analytics-${BUILD_NUMBER}
-    ports:
-      - "8012:8002"
+    network_mode: host
     environment:
       - NODE_ENV=test
-    networks:
-      - test-network-${BUILD_NUMBER}
+      - PORT=8012
 
   notifications-test:
     image: shopsphere-notifications:${BUILD_NUMBER}
     container_name: test-notifications-${BUILD_NUMBER}
-    ports:
-      - "8013:8003"
+    network_mode: host
     environment:
       - NODE_ENV=test
-    networks:
-      - test-network-${BUILD_NUMBER}
-
-networks:
-  test-network-${BUILD_NUMBER}:
-    driver: bridge
+      - PORT=8013
 EOF
                         
-                        # Create network first to avoid conflicts
-                        echo "🌐 Creating test network..."
-                        docker network create test-network-${BUILD_NUMBER} 2>/dev/null || echo "Network test-network-${BUILD_NUMBER} already exists or failed to create, continuing..."
-                        
-                        # Start test containers
-                        echo "🚀 Starting test containers..."
+                        # Start test containers with host networking
+                        echo "🚀 Starting test containers with host networking..."
                         docker-compose -f docker-compose.test.yml up -d
                         
                         echo "⏰ Waiting 30 seconds for containers to initialize..."
@@ -299,7 +283,7 @@ EOF
                         for i in $(seq 1 10); do
                             # First check if container is running
                             if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
-                                # Check via localhost (Jenkins host can access mapped ports)
+                                # Check via localhost (host networking allows direct access)
                                 if curl -f http://localhost:8011/health >/dev/null 2>&1; then
                                     echo "Backend is healthy via localhost:8011! ✅"
                                     BACKEND_HEALTHY=true
@@ -318,7 +302,7 @@ EOF
                         for i in $(seq 1 20); do
                             # First check if container is running
                             if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
-                                # Check via localhost (Jenkins host can access mapped ports)
+                                # Check via localhost (host networking allows direct access)
                                 if curl -f http://localhost:3010/ >/dev/null 2>&1; then
                                     echo "Frontend is healthy via localhost:3010! ✅"
                                     FRONTEND_HEALTHY=true
@@ -348,7 +332,7 @@ EOF
                         # Final status check using localhost (backend and frontend only)
                         echo "=== Final Health Check Status (Backend & Frontend Only) ==="
                         
-                        # Check backend via localhost
+                        # Check backend via localhost (host networking)
                         if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
                             if curl -f http://localhost:8011/health >/dev/null 2>&1; then
                                 echo "Backend: ✅ HEALTHY (via localhost:8011)"
@@ -359,7 +343,7 @@ EOF
                             echo "Backend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        # Check frontend via localhost  
+                        # Check frontend via localhost (host networking)
                         if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
                             if curl -f http://localhost:3010/ >/dev/null 2>&1; then
                                 echo "Frontend: ✅ HEALTHY (via localhost:3010)"  
@@ -397,17 +381,6 @@ EOF
                             docker rm -f "${container}" 2>/dev/null || true
                         else
                             echo "Container ${container} not found, skipping"
-                        fi
-                    done
-                    
-                    # Remove test networks gracefully
-                    echo "🔍 Checking for test networks to remove..."
-                    for network in "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
-                        if docker network ls --format "{{.Name}}" | grep -q "^${network}$" 2>/dev/null; then
-                            echo "Removing network: ${network}"
-                            docker network rm "${network}" 2>/dev/null || true
-                        else
-                            echo "Network ${network} not found, skipping"
                         fi
                     done
                     
@@ -458,11 +431,6 @@ EOF
                     echo "🔧 Final cleanup of any remaining test resources..."
                     for container in "test-backend-${BUILD_NUMBER}" "test-frontend-${BUILD_NUMBER}" "test-analytics-${BUILD_NUMBER}" "test-notifications-${BUILD_NUMBER}"; do
                         docker rm -f "${container}" 2>/dev/null || true
-                    done
-                    
-                    # Remove test networks gracefully
-                    for network in "test-network" "test-network-${BUILD_NUMBER}" "shopsphere-test-${BUILD_NUMBER}" "shopsphere-build-network"; do
-                        docker network rm "${network}" 2>/dev/null || true
                     done
                     
                     # Show final docker state
