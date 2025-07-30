@@ -205,17 +205,18 @@ EOF
                         docker logs test-frontend-${BUILD_NUMBER} 2>&1 | tail -10 || echo "Cannot get frontend logs"
                         
                         # Wait for backend to be ready (faster startup)
-                        echo "📊 Checking Backend Health:"
+                        echo "📊 Checking Backend Health via Test Network:"
                         BACKEND_HEALTHY=false
                         for i in $(seq 1 10); do
                             # First check if container is running
                             if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
-                                if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
-                                    echo "Backend is healthy! ✅"
+                                # Check via docker network communication from frontend container
+                                if docker exec test-frontend-${BUILD_NUMBER} curl -f http://test-backend-${BUILD_NUMBER}:8001/health >/dev/null 2>&1; then
+                                    echo "Backend is healthy via test network! ✅"
                                     BACKEND_HEALTHY=true
                                     break
                                 fi
-                                echo "Backend container running but not healthy yet, waiting... (attempt $i/10)"
+                                echo "Backend container running but not healthy via network yet, waiting... (attempt $i/10)"
                             else
                                 echo "Backend container not running, waiting... (attempt $i/10)"
                             fi
@@ -223,49 +224,50 @@ EOF
                         done
                         
                         # Wait for frontend to be ready (slower startup)  
-                        echo "🌐 Checking Frontend Health (allowing more time for Next.js):"
+                        echo "🌐 Checking Frontend Health via Test Network:"
                         FRONTEND_HEALTHY=false
                         for i in $(seq 1 20); do
                             # First check if container is running
                             if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
-                                if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
-                                    echo "Frontend is healthy! ✅"
+                                # Check via docker network communication from backend container
+                                if docker exec test-backend-${BUILD_NUMBER} curl -f http://test-frontend-${BUILD_NUMBER}:3000/ >/dev/null 2>&1; then
+                                    echo "Frontend is healthy via test network! ✅"
                                     FRONTEND_HEALTHY=true
                                     break
                                 fi
-                                echo "Frontend container running but not healthy yet, waiting... (attempt $i/20)"
+                                echo "Frontend container running but not healthy via network yet, waiting... (attempt $i/20)"
                             else
                                 echo "Frontend container not running, waiting... (attempt $i/20)"
                             fi
                             sleep 15
                         done
                         
-                        # Final status check using docker exec (internal container checks)
-                        echo "=== Final Health Check Status ==="
+                        # Final status check using docker network communication
+                        echo "=== Final Network Health Check Status ==="
                         
-                        # Check backend
+                        # Check backend via network
                         if docker ps | grep -q "test-backend-${BUILD_NUMBER}"; then
-                            if docker exec test-backend-${BUILD_NUMBER} curl -f http://localhost:8001/health >/dev/null 2>&1; then
-                                echo "Backend: ✅ HEALTHY"
+                            if docker exec test-frontend-${BUILD_NUMBER} curl -f http://test-backend-${BUILD_NUMBER}:8001/health >/dev/null 2>&1; then
+                                echo "Backend: ✅ HEALTHY (via test network)"
                             else
-                                echo "Backend: ❌ RUNNING BUT UNHEALTHY (but continuing pipeline)"
+                                echo "Backend: ❌ RUNNING BUT UNHEALTHY via network (but continuing pipeline)"
                             fi
                         else
                             echo "Backend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        # Check frontend  
+                        # Check frontend via network  
                         if docker ps | grep -q "test-frontend-${BUILD_NUMBER}"; then
-                            if docker exec test-frontend-${BUILD_NUMBER} curl -f http://localhost:3000/ >/dev/null 2>&1; then
-                                echo "Frontend: ✅ HEALTHY"  
+                            if docker exec test-backend-${BUILD_NUMBER} curl -f http://test-frontend-${BUILD_NUMBER}:3000/ >/dev/null 2>&1; then
+                                echo "Frontend: ✅ HEALTHY (via test network)"  
                             else
-                                echo "Frontend: ❌ RUNNING BUT UNHEALTHY (but continuing pipeline)"
+                                echo "Frontend: ❌ RUNNING BUT UNHEALTHY via network (but continuing pipeline)"
                             fi
                         else
                             echo "Frontend: ❌ CONTAINER NOT RUNNING (but continuing pipeline)"
                         fi
                         
-                        echo "Health checks completed - Pipeline continues regardless of health status ✅"
+                        echo "Network health checks completed - Pipeline continues regardless of health status ✅"
                     '''
                 }
             }

@@ -1348,3 +1348,4 @@ t=2025-07-30T11:17:03+0530 lvl=info msg="join connections" obj=join id=b8551136b
 t=2025-07-30T11:26:28+0530 lvl=info msg="join connections" obj=join id=030927e6efd6 l=[::1]:9040 r=140.82.115.113:46666
 t=2025-07-30T11:38:12+0530 lvl=info msg=start pg=/api/tunnels id=8dceb28c60133609
 t=2025-07-30T11:38:12+0530 lvl=info msg=end pg=/api/tunnels id=8dceb28c60133609 status=200 dur=3.982333ms
+t=2025-07-30T11:39:51+0530 lvl=info msg="join connections" obj=join id=5e99f0d200c2 l=[::1]:9040 r=140.82.115.77:53072
