@@ -16,7 +16,6 @@ A modern, cloud-native e-commerce platform built with microservices architecture
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
-- [License](#license)
 
 ## 🎯 Overview
 
@@ -364,15 +363,6 @@ kubectl get pods -n shopsphere
 # Access services
 kubectl port-forward svc/frontend 3000:3000
 kubectl port-forward svc/backend 8001:8001
-```
-
-### Terraform (AWS)
-
-```bash
-cd terraform
-terraform init
-terraform plan
-terraform apply
 ```
 
 ## 📁 Project Structure
